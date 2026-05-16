@@ -1,0 +1,52 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.6'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.ecommerce'
+version = '0.0.1-SNAPSHOT'
+description = 'member-service'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // REST API
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    // JPA/Hibernate (ORM)
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    // 입력값 검증 (@Valid, @NotBlank 등)
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    // JWT 토큰 발급
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // 비밀번호 BCrypt 해싱 (Spring Security 없이 사용)
+    implementation 'org.springframework.security:spring-security-crypto'
+
+    // MySQL 드라이버
+    runtimeOnly 'com.mysql:mysql-connector-j'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testCompileOnly 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

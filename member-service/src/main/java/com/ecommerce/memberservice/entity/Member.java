@@ -1,0 +1,39 @@
+package com.ecommerce.memberservice.entity;
+
+import com.ecommerce.memberservice.dto.res.MemberResponse;
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
+@Entity
+@Table(name = "member")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+public class Member {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(unique = true, nullable = false)
+    private String email;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String address;
+
+    public Member(String email, String name, String password, String address) {
+        this.email = email;
+        this.name = name;
+        this.password = password;
+        this.address = address;
+    }
+
+    public MemberResponse toResponse() {
+        return new MemberResponse(this.id, this.email);
+    }
+}
