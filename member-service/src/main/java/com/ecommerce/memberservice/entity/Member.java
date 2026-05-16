@@ -3,8 +3,10 @@ package com.ecommerce.memberservice.entity;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "member")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -36,4 +38,6 @@ public class Member {
     public MemberResponse toResponse() {
         return new MemberResponse(this.id, this.email);
     }
+
+
 }
