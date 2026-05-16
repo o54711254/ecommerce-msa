@@ -1,5 +1,6 @@
 package com.ecommerce.memberservice.entity;
 
+import com.ecommerce.memberservice.dto.res.MemberProfileResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -39,5 +40,7 @@ public class Member {
         return new MemberResponse(this.id, this.email);
     }
 
-
+    public MemberProfileResponse toProfileResponse() {
+        return new MemberProfileResponse(this.email, this.name, this.address);
+    }
 }
