@@ -18,6 +18,16 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 게이트웨이 인증 필터
+ *
+ * 모든 요청은 이 필터를 먼저 통과한다.
+ * - 공개 엔드포인트(/login, /join)는 토큰 없이 통과
+ * - 나머지 요청은 JWT를 검증하고, 성공 시 memberId를 X-Member-Id 헤더에 담아 다운스트림 서비스로 전달
+ *
+ * 다운스트림 서비스(member-service, order-service 등)는 X-Member-Id 헤더만 보고 요청자를 식별한다.
+ * 토큰 검증은 게이트웨이에서만 하므로 각 서비스는 JWT 로직이 필요 없다.
+ */
 @Component
 @RequiredArgsConstructor
 public class AuthenticationFilter extends OncePerRequestFilter {
