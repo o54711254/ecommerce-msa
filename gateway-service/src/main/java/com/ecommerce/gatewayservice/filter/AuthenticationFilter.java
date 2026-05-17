@@ -20,11 +20,11 @@ import java.util.Map;
 
 /**
  * 게이트웨이 인증 필터
- *
+ * <p>
  * 모든 요청은 이 필터를 먼저 통과한다.
  * - 공개 엔드포인트(/login, /join)는 토큰 없이 통과
  * - 나머지 요청은 JWT를 검증하고, 성공 시 memberId를 X-Member-Id 헤더에 담아 다운스트림 서비스로 전달
- *
+ * <p>
  * 다운스트림 서비스(member-service, order-service 등)는 X-Member-Id 헤더만 보고 요청자를 식별한다.
  * 토큰 검증은 게이트웨이에서만 하므로 각 서비스는 JWT 로직이 필요 없다.
  */
@@ -39,7 +39,8 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         // 1. 공개 엔드포인트는 토큰 검증 없이 통과
-        if (request.getRequestURI().endsWith("/login") || request.getRequestURI().endsWith("/join")) {
+        String uri = request.getRequestURI();
+        if (uri.endsWith("/login") || uri.endsWith("/join") || uri.endsWith("/join/seller")) {
             filterChain.doFilter(request, response);
             return;
         }
@@ -61,10 +62,15 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         // 4. 토큰 유효성 검증
         try {
             Long memberId = jwtUtil.getMemberId(token);
+            String role = jwtUtil.getRole(token);
 
             // 5. 검증 성공 시 memberId를 헤더에 심어서 다음 서비스로 전달
             // 각 서비스는 X-Member-Id 헤더를 믿고 그대로 사용한다
-            filterChain.doFilter(new AddHeaderRequestWrapper(request, "X-Member-Id", memberId.toString()), response);
+            Map<String, String> headerMap = new HashMap<>();
+            headerMap.put("X-Member-Id", memberId.toString());
+            headerMap.put("X-Member-Role", role);
+            filterChain.doFilter(new AddHeaderRequestWrapper(request, headerMap), response);
+
         } catch (JwtException e) {
             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token: " + e.getMessage());
         }
@@ -75,9 +81,9 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         private final Map<String, String> customHeaders = new HashMap<>();
 
-        public AddHeaderRequestWrapper(HttpServletRequest request, String name, String value) {
+        public AddHeaderRequestWrapper(HttpServletRequest request, Map<String, String> customHeaders) {
             super(request);
-            customHeaders.put(name, value);
+            this.customHeaders.putAll(customHeaders);
         }
 
         @Override

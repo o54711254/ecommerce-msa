@@ -12,7 +12,7 @@ import java.util.Date;
 
 /**
  * 게이트웨이 JWT 유틸리티
- *
+ * <p>
  * 토큰 검증만 담당한다. 토큰 발급은 member-service가 한다.
  * 두 서비스가 동일한 jwt.secret을 공유하기 때문에 검증이 가능하다.
  */
@@ -37,10 +37,18 @@ public class JwtUtil {
     }
 
     /**
-     * 토큰에서 회원 ID 추출
+     * 토큰에서 회원 ID 추출, subject로 id 등록해놔서 가져옴
      */
     public Long getMemberId(String token) {
         return Long.parseLong(getAllClaims(token).getSubject());
+    }
+
+
+    /*
+     * Role은 claimName을 role로
+     * */
+    public String getRole(String token) {
+        return getAllClaims(token).get("role", String.class);
     }
 
     /**

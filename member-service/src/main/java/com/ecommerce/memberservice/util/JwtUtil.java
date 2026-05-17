@@ -1,7 +1,7 @@
 package com.ecommerce.memberservice.util;
 
+import com.ecommerce.memberservice.entity.Role;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -20,10 +20,11 @@ public class JwtUtil {
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
-    public String generateToken(Long id) {
+    public String generateToken(Long id, Role role) {
         return Jwts.builder()
                 .subject(id.toString())
                 .issuedAt(new Date())
+                .claim("role", role.name())
                 .expiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(secretKey)
                 .compact();

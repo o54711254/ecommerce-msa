@@ -1,6 +1,7 @@
 package com.ecommerce.memberservice.dto.req;
 
 import com.ecommerce.memberservice.entity.Member;
+import com.ecommerce.memberservice.entity.Role;
 
 public record JoinMemberRequest(
         String email,
@@ -8,7 +9,7 @@ public record JoinMemberRequest(
         String password,
         String address
 ) {
-    public Member toEntity(String encodedPassword){
-        return new Member(email, name, encodedPassword, address);
+    public Member toEntity(Role role, String encodedPassword) {
+        return new Member(email, role, name, encodedPassword, address);
     }
 }

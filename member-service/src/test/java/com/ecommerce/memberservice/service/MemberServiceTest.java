@@ -5,6 +5,7 @@ import com.ecommerce.memberservice.dto.req.LoginRequest;
 import com.ecommerce.memberservice.dto.res.LoginResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import com.ecommerce.memberservice.entity.Member;
+import com.ecommerce.memberservice.entity.Role;
 import com.ecommerce.memberservice.repository.MemberRepository;
 import com.ecommerce.memberservice.util.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -40,25 +41,41 @@ class MemberServiceTest {
     @Test
     void 회원가입_성공() {
         JoinMemberRequest request = new JoinMemberRequest("test@test.com", "홍길동", "1234", "서울");
-        Member savedMember = new Member("test@test.com", "홍길동", "encoded", "서울");
+        Member savedMember = new Member("test@test.com", Role.MEMBER, "홍길동", "encoded", "서울");
 
         given(memberRepository.findByEmail("test@test.com")).willReturn(Optional.empty());
         given(passwordEncoder.encode("1234")).willReturn("encoded");
         given(memberRepository.save(any(Member.class))).willReturn(savedMember);
 
-        MemberResponse response = memberService.join(request);
+        MemberResponse response = memberService.join(request, Role.MEMBER);
 
         assertThat(response.email()).isEqualTo("test@test.com");
+        assertThat(response.role()).isEqualTo(Role.MEMBER);
+    }
+
+    @Test
+    void 판매자_회원가입_성공() {
+        JoinMemberRequest request = new JoinMemberRequest("seller@test.com", "판매자", "1234", "부산");
+        Member savedMember = new Member("seller@test.com", Role.SELLER, "판매자", "encoded", "부산");
+
+        given(memberRepository.findByEmail("seller@test.com")).willReturn(Optional.empty());
+        given(passwordEncoder.encode("1234")).willReturn("encoded");
+        given(memberRepository.save(any(Member.class))).willReturn(savedMember);
+
+        MemberResponse response = memberService.join(request, Role.SELLER);
+
+        assertThat(response.email()).isEqualTo("seller@test.com");
+        assertThat(response.role()).isEqualTo(Role.SELLER);
     }
 
     @Test
     void 회원가입_이메일_중복() {
         JoinMemberRequest request = new JoinMemberRequest("test@test.com", "홍길동", "1234", "서울");
-        Member existing = new Member("test@test.com", "홍길동", "encoded", "서울");
+        Member existing = new Member("test@test.com", Role.MEMBER, "홍길동", "encoded", "서울");
 
         given(memberRepository.findByEmail("test@test.com")).willReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> memberService.join(request))
+        assertThatThrownBy(() -> memberService.join(request, Role.MEMBER))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("이미 가입된 이메일입니다");
     }
@@ -66,11 +83,11 @@ class MemberServiceTest {
     @Test
     void 로그인_성공() {
         LoginRequest request = new LoginRequest("test@test.com", "1234");
-        Member member = new Member("test@test.com", "홍길동", "encoded", "서울");
+        Member member = new Member("test@test.com", Role.MEMBER, "홍길동", "encoded", "서울");
 
         given(memberRepository.findByEmail("test@test.com")).willReturn(Optional.of(member));
         given(passwordEncoder.matches("1234", "encoded")).willReturn(true);
-        given(jwtUtil.generateToken(any())).willReturn("jwt-token");
+        given(jwtUtil.generateToken(any(), any())).willReturn("jwt-token");
 
         LoginResponse response = memberService.login(request);
 
@@ -91,7 +108,7 @@ class MemberServiceTest {
     @Test
     void 로그인_비밀번호_불일치() {
         LoginRequest request = new LoginRequest("test@test.com", "wrong");
-        Member member = new Member("test@test.com", "홍길동", "encoded", "서울");
+        Member member = new Member("test@test.com", Role.MEMBER, "홍길동", "encoded", "서울");
 
         given(memberRepository.findByEmail("test@test.com")).willReturn(Optional.of(member));
         given(passwordEncoder.matches("wrong", "encoded")).willReturn(false);

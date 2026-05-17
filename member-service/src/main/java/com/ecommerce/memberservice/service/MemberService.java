@@ -6,6 +6,7 @@ import com.ecommerce.memberservice.dto.res.LoginResponse;
 import com.ecommerce.memberservice.dto.res.MemberProfileResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import com.ecommerce.memberservice.entity.Member;
+import com.ecommerce.memberservice.entity.Role;
 import com.ecommerce.memberservice.repository.MemberRepository;
 import com.ecommerce.memberservice.util.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
@@ -23,13 +24,13 @@ public class MemberService {
     private final BCryptPasswordEncoder passwordEncoder;
 
     @Transactional
-    public MemberResponse join(JoinMemberRequest request) {
+    public MemberResponse join(JoinMemberRequest request, Role role) {
         if (memberRepository.findByEmail(request.email()).isPresent()) {
             throw new IllegalArgumentException("이미 가입된 이메일입니다: " + request.email());
         }
 
         String encodedPassword = passwordEncoder.encode(request.password());
-        Member member = request.toEntity(encodedPassword);
+        Member member = request.toEntity(role, encodedPassword);
 
         return memberRepository.save(member).toResponse();
     }
@@ -41,7 +42,7 @@ public class MemberService {
             throw new IllegalArgumentException("비밀번호가 일치하지 않습니다.");
         }
 
-        String token = jwtUtil.generateToken(member.getId());
+        String token = jwtUtil.generateToken(member.getId(), member.getRole());
         return new LoginResponse(token);
     }
 

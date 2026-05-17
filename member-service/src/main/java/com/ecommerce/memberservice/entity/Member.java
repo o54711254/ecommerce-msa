@@ -21,6 +21,10 @@ public class Member {
     private String email;
 
     @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @Column(nullable = false)
     private String name;
 
     @Column(nullable = false)
@@ -29,18 +33,19 @@ public class Member {
     @Column(nullable = false)
     private String address;
 
-    public Member(String email, String name, String password, String address) {
+    public Member(String email, Role role, String name, String password, String address) {
         this.email = email;
+        this.role = role;
         this.name = name;
         this.password = password;
         this.address = address;
     }
 
     public MemberResponse toResponse() {
-        return new MemberResponse(this.id, this.email);
+        return new MemberResponse(this.id, this.role, this.email);
     }
 
     public MemberProfileResponse toProfileResponse() {
-        return new MemberProfileResponse(this.email, this.name, this.address);
+        return new MemberProfileResponse(this.email, this.role, this.name, this.address);
     }
 }
