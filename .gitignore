@@ -1,0 +1,21 @@
+CLAUDE.md
+
+# 설정 파일 (민감 정보)
+*.yml
+*.yaml
+
+# Gradle
+.gradle/
+build/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# macOS
+.DS_Store
+
+# Java
+*.class
+*.jar
