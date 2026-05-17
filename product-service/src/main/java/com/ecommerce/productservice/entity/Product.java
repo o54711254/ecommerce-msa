@@ -1,0 +1,44 @@
+package com.ecommerce.productservice.entity;
+
+import jakarta.persistence.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Entity
+@Table(name = "product")
+public class Product extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false)
+    private Long sellerId;
+
+    @Column(nullable = false)
+    private String name;
+
+    @Lob
+    private String description;
+
+    @Column(nullable = false)
+    private Long price;
+
+    @Enumerated(EnumType.STRING)
+    private ProductStatus status;
+
+    private Product(Long sellerId, String name, String description, Long price) {
+        this.sellerId = sellerId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.status = ProductStatus.AVAILABLE;
+    }
+
+    public static Product create(Long sellerId, String name, String description, Long price) {
+        return new Product(sellerId, name, description, price);
+    }
+}
