@@ -1,4 +1,4 @@
-package com.ecommerce.productservice.dto;
+package com.ecommerce.productservice.domain.dto.req;
 
 public record CreateProductRequest(
         String name,

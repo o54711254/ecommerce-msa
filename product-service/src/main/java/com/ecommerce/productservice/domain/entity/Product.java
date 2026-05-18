@@ -1,4 +1,4 @@
-package com.ecommerce.productservice.entity;
+package com.ecommerce.productservice.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.AccessLevel;

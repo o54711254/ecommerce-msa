@@ -1,8 +1,12 @@
-package com.ecommerce.productservice.controller;
+package com.ecommerce.productservice.domain.controller;
 
-import com.ecommerce.productservice.dto.CreateProductRequest;
-import com.ecommerce.productservice.service.ProductService;
+import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
+import com.ecommerce.productservice.domain.dto.req.SearchRequest;
+import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.ecommerce.productservice.domain.service.ProductService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,5 +22,10 @@ public class ProductController {
                                               @RequestHeader("X-Member-Role") String role,
                                               @RequestBody CreateProductRequest request) {
         return ResponseEntity.ok(productService.createProduct(sellerId, role, request));
+    }
+
+    @GetMapping
+    public ResponseEntity<Page<ProductListResponse>> getProductList(@ModelAttribute SearchRequest request, Pageable pageable) {
+        return ResponseEntity.ok(productService.getProductList(request, pageable));
     }
 }
