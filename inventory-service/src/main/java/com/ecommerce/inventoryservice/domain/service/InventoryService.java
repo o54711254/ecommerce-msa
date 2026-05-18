@@ -18,4 +18,9 @@ public class InventoryService {
         Inventory inventory = Inventory.create(request.productId(), request.quantity());
         return inventoryRepository.save(inventory).getId();
     }
+
+    @Transactional
+    public void deleteInventoryByProductId(Long productId) {
+        inventoryRepository.deleteByProductId(productId);
+    }
 }

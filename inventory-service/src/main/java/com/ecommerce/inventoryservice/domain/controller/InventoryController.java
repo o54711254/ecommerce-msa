@@ -4,10 +4,7 @@ import com.ecommerce.inventoryservice.domain.dto.req.CreateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,5 +16,11 @@ public class InventoryController {
     @PostMapping
     public ResponseEntity<Long> createInventory(@RequestBody CreateInventoryRequest request) {
         return ResponseEntity.ok(inventoryService.createInventory(request));
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> deleteInventory(@PathVariable Long productId) {
+        inventoryService.deleteInventoryByProductId(productId);
+        return ResponseEntity.ok().build();
     }
 }

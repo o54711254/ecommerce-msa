@@ -69,5 +69,6 @@ public class ProductService {
             throw new InvalidParameterException("Invalid sellerId");
         }
         productRepository.delete(product);
+        inventoryClient.deleteInventory(id);
     }
 }
