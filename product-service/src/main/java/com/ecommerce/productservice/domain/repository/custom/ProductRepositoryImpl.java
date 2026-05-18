@@ -2,6 +2,7 @@ package com.ecommerce.productservice.domain.repository.custom;
 
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -22,22 +23,29 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
     private final JPAQueryFactory jpaQueryFactory;
 
     @Override
-    public Page<ProductListResponse> getProductList(SearchRequest request, Pageable pageable) {
-        List<ProductListResponse> list = getProducts(request, pageable);
-        long count = getCount(request);
+    public Page<ProductListResponse> getProductPage(SearchRequest request, Pageable pageable) {
+        List<ProductListResponse> list = getProducts(null, request, pageable);
+        long count = getCount(null, request);
         return new PageImpl<>(list, pageable, count);
     }
 
-    private Long getCount(SearchRequest request) {
+    @Override
+    public Page<ProductListResponse> getMyProductPage(Long sellerId, SearchRequest request, Pageable pageable) {
+        List<ProductListResponse> list = getProducts(sellerId, request, pageable);
+        long count = getCount(sellerId, request);
+        return new PageImpl<>(list, pageable, count);
+    }
+
+    private Long getCount(Long sellerId, SearchRequest request) {
         return jpaQueryFactory.select(product.count())
                 .from(product)
                 .where(
-                        nameContains(request)
+                        whereQuery(sellerId, request)
                 )
                 .fetchOne();
     }
 
-    private List<ProductListResponse> getProducts(SearchRequest request, Pageable pageable) {
+    private List<ProductListResponse> getProducts(Long sellerId, SearchRequest request, Pageable pageable) {
         return jpaQueryFactory.select(Projections.constructor(ProductListResponse.class,
                         product.name.as("productName"),
                         product.price.as("price"),
@@ -45,11 +53,22 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 ))
                 .from(product)
                 .where(
-                        nameContains(request)
+                        whereQuery(sellerId, request)
                 )
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
+    }
+
+    private BooleanBuilder whereQuery(Long sellerId, SearchRequest request) {
+        BooleanBuilder builder = new BooleanBuilder();
+        builder.and(eqSellerId(sellerId));
+        builder.and(nameContains(request));
+        return builder;
+    }
+
+    private BooleanExpression eqSellerId(Long sellerId) {
+        return sellerId == null ? null : product.sellerId.eq(sellerId);
     }
 
     private BooleanExpression nameContains(SearchRequest request) {

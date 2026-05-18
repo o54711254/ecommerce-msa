@@ -26,6 +26,27 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<Page<ProductListResponse>> getProductList(@ModelAttribute SearchRequest request, Pageable pageable) {
-        return ResponseEntity.ok(productService.getProductList(request, pageable));
+        return ResponseEntity.ok(productService.getProductPage(request, pageable));
+    }
+
+    @GetMapping("/my")
+    public ResponseEntity<Page<ProductListResponse>> getMyProductList(@RequestHeader("X-Member-Id") Long sellerId,
+                                                                      @RequestHeader("X-Member-Role") String role,
+                                                                      @ModelAttribute SearchRequest request, Pageable pageable) {
+        return ResponseEntity.ok(productService.getMyProductPage(sellerId, role, request, pageable));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Long> updateProduct(@PathVariable Long id,
+                                              @RequestHeader("X-Member-Id") Long sellerId,
+                                              @RequestBody CreateProductRequest request) {
+        return ResponseEntity.ok(productService.updateProduct(id, sellerId, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteProduct(@PathVariable Long id,
+                                           @RequestHeader("X-Member-Id") Long sellerId) {
+        productService.deleteProduct(id, sellerId);
+        return ResponseEntity.ok().build();
     }
 }

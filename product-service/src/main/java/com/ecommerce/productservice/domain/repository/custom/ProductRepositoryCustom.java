@@ -6,5 +6,6 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 public interface ProductRepositoryCustom {
-    Page<ProductListResponse> getProductList(SearchRequest request, Pageable pageable);
+    Page<ProductListResponse> getProductPage(SearchRequest request, Pageable pageable);
+    Page<ProductListResponse> getMyProductPage(Long sellerId, SearchRequest request, Pageable pageable);
 }
