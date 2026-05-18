@@ -20,6 +20,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.security.InvalidParameterException;
 import java.util.List;
 
+import jakarta.persistence.EntityNotFoundException;
+
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -70,13 +74,118 @@ class ProductServiceTest {
         Page<ProductListResponse> expected = new PageImpl<>(List.of(
                 new ProductListResponse("사과", 1000L, ProductStatus.AVAILABLE)
         ));
-        given(productRepository.getProductList(request, pageable)).willReturn(expected);
+        given(productRepository.getProductPage(request, pageable)).willReturn(expected);
 
         // when
-        Page<ProductListResponse> result = productService.getProductList(request, pageable);
+        Page<ProductListResponse> result = productService.getProductPage(request, pageable);
 
         // then
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).productName()).isEqualTo("사과");
+    }
+
+    @Test
+    void 내_상품_목록_조회_성공() {
+        // given
+        Long sellerId = 1L;
+        SearchRequest request = new SearchRequest(null);
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<ProductListResponse> expected = new PageImpl<>(List.of(
+                new ProductListResponse("사과", 1000L, ProductStatus.AVAILABLE)
+        ));
+        given(productRepository.getMyProductPage(sellerId, request, pageable)).willReturn(expected);
+
+        // when
+        Page<ProductListResponse> result = productService.getMyProductPage(sellerId, "SELLER", request, pageable);
+
+        // then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).productName()).isEqualTo("사과");
+    }
+
+    @Test
+    void SELLER_아니면_내_상품_목록_조회_실패() {
+        // given
+        SearchRequest request = new SearchRequest(null);
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // when & then
+        assertThatThrownBy(() -> productService.getMyProductPage(1L, "MEMBER", request, pageable))
+                .isInstanceOf(InvalidParameterException.class);
+    }
+
+    @Test
+    void 상품_수정_성공() {
+        // given
+        Long sellerId = 1L;
+        Product product = Product.create(sellerId, "사과", "맛있는 사과", 1000L);
+        ReflectionTestUtils.setField(product, "id", 1L);
+        given(productRepository.findById(1L)).willReturn(Optional.of(product));
+
+        CreateProductRequest request = new CreateProductRequest("수정된 사과", "더 맛있는 사과", 2000L);
+
+        // when
+        Long result = productService.updateProduct(1L, sellerId, request);
+
+        // then
+        assertThat(result).isEqualTo(1L);
+        assertThat(product.getName()).isEqualTo("수정된 사과");
+        assertThat(product.getPrice()).isEqualTo(2000L);
+    }
+
+    @Test
+    void 본인_상품_아니면_수정_실패() {
+        // given
+        Product product = Product.create(1L, "사과", "맛있는 사과", 1000L);
+        given(productRepository.findById(1L)).willReturn(Optional.of(product));
+
+        // when & then
+        assertThatThrownBy(() -> productService.updateProduct(1L, 2L, new CreateProductRequest("수정", "수정", 2000L)))
+                .isInstanceOf(InvalidParameterException.class);
+    }
+
+    @Test
+    void 상품_수정_상품_없으면_실패() {
+        // given
+        given(productRepository.findById(1L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> productService.updateProduct(1L, 1L, new CreateProductRequest("수정", "수정", 2000L)))
+                .isInstanceOf(EntityNotFoundException.class);
+    }
+
+    @Test
+    void 상품_삭제_성공() {
+        // given
+        Long sellerId = 1L;
+        Product product = Product.create(sellerId, "사과", "맛있는 사과", 1000L);
+        given(productRepository.findById(1L)).willReturn(Optional.of(product));
+
+        // when
+        productService.deleteProduct(1L, sellerId);
+
+        // then
+        verify(productRepository).delete(product);
+    }
+
+    @Test
+    void 본인_상품_아니면_삭제_실패() {
+        // given
+        Product product = Product.create(1L, "사과", "맛있는 사과", 1000L);
+        given(productRepository.findById(1L)).willReturn(Optional.of(product));
+
+        // when & then
+        assertThatThrownBy(() -> productService.deleteProduct(1L, 2L))
+                .isInstanceOf(InvalidParameterException.class);
+    }
+
+    @Test
+    void 상품_삭제_상품_없으면_실패() {
+        // given
+        given(productRepository.findById(1L)).willReturn(Optional.empty());
+
+        // when & then
+        assertThatThrownBy(() -> productService.deleteProduct(1L, 1L))
+                .isInstanceOf(EntityNotFoundException.class);
     }
 }

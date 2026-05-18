@@ -38,6 +38,12 @@ public class Product extends BaseEntity {
         this.status = ProductStatus.AVAILABLE;
     }
 
+    public void update(String name, String description, Long price) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+    }
+
     public static Product create(Long sellerId, String name, String description, Long price) {
         return new Product(sellerId, name, description, price);
     }
