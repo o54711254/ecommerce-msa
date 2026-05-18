@@ -37,4 +37,9 @@ public class MemberController {
     public ResponseEntity<MemberProfileResponse> getMember(@RequestHeader("X-Member-Id") Long memberId) {
         return ResponseEntity.ok(memberService.getMemberProfile(memberId));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<MemberProfileResponse> getMemberById(@PathVariable Long id) {
+        return ResponseEntity.ok(memberService.getMemberProfile(id));
+    }
 }

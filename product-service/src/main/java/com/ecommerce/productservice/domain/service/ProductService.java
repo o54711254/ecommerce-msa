@@ -2,11 +2,15 @@ package com.ecommerce.productservice.domain.service;
 
 import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
+import com.ecommerce.productservice.domain.dto.res.ProductDetailResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
-import com.ecommerce.productservice.infra.feign.CreateInventoryRequest;
-import com.ecommerce.productservice.infra.feign.InventoryClient;
+import com.ecommerce.productservice.infra.feign.inventory.CreateInventoryRequest;
+import com.ecommerce.productservice.infra.feign.inventory.InventoryClient;
+import com.ecommerce.productservice.infra.feign.inventory.InventoryResponse;
+import com.ecommerce.productservice.infra.feign.member.MemberClient;
+import com.ecommerce.productservice.infra.feign.member.SellerResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -22,6 +26,7 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final InventoryClient inventoryClient;
+    private final MemberClient memberClient;
 
     @Transactional
     public Long createProduct(Long sellerId, String role, CreateProductRequest request) {
@@ -35,6 +40,26 @@ public class ProductService {
         inventoryClient.createInventory(new CreateInventoryRequest(productId, request.quantity()));
 
         return productId;
+    }
+
+    @Transactional(readOnly = true)
+    public ProductDetailResponse getProductDetail(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+
+        InventoryResponse inventory = inventoryClient.getInventory(product.getId()).getBody();
+        SellerResponse seller = memberClient.getSeller(product.getSellerId()).getBody();
+
+        return ProductDetailResponse.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .description(product.getDescription())
+                .price(product.getPrice())
+                .createdDate(product.getCreatedAt().toLocalDate())
+                .sellerId(product.getSellerId())
+                .sellerName(seller.name())
+                .sellerEmail(seller.email())
+                .quantity(inventory.quantity())
+                .build();
     }
 
     @Transactional(readOnly = true)

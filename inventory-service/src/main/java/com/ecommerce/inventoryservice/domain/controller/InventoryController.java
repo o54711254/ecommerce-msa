@@ -1,6 +1,7 @@
 package com.ecommerce.inventoryservice.domain.controller;
 
 import com.ecommerce.inventoryservice.domain.dto.req.CreateInventoryRequest;
+import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,11 @@ public class InventoryController {
     @PostMapping
     public ResponseEntity<Long> createInventory(@RequestBody CreateInventoryRequest request) {
         return ResponseEntity.ok(inventoryService.createInventory(request));
+    }
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<InventoryResponse> getInventory(@PathVariable Long productId) {
+        return ResponseEntity.ok(inventoryService.getInventoryByProductId(productId));
     }
 
     @DeleteMapping("/{productId}")
