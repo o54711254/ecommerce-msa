@@ -5,6 +5,8 @@ import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
+import com.ecommerce.productservice.infra.feign.CreateInventoryRequest;
+import com.ecommerce.productservice.infra.feign.InventoryClient;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -19,6 +21,7 @@ import java.security.InvalidParameterException;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final InventoryClient inventoryClient;
 
     @Transactional
     public Long createProduct(Long sellerId, String role, CreateProductRequest request) {
@@ -27,8 +30,11 @@ public class ProductService {
         }
 
         Product product = Product.create(sellerId, request.name(), request.description(), request.price());
+        Long productId = productRepository.save(product).getId();
 
-        return productRepository.save(product).getId();
+        inventoryClient.createInventory(new CreateInventoryRequest(productId, request.quantity()));
+
+        return productId;
     }
 
     @Transactional(readOnly = true)

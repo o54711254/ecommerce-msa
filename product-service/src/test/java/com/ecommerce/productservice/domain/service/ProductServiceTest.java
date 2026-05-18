@@ -6,6 +6,7 @@ import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.entity.ProductStatus;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
+import com.ecommerce.productservice.infra.feign.InventoryClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -36,6 +37,9 @@ class ProductServiceTest {
     @Mock
     private ProductRepository productRepository;
 
+    @Mock
+    private InventoryClient inventoryClient;
+
     @InjectMocks
     private ProductService productService;
 
@@ -43,7 +47,7 @@ class ProductServiceTest {
     void 상품_등록_성공() {
         // given
         Long sellerId = 1L;
-        CreateProductRequest request = new CreateProductRequest("사과", "맛있는 사과", 1000L);
+        CreateProductRequest request = new CreateProductRequest("사과", "맛있는 사과", 1000L, 10);
         Product savedProduct = Product.create(sellerId, request.name(), request.description(), request.price());
         ReflectionTestUtils.setField(savedProduct, "id", 1L);
         given(productRepository.save(any(Product.class))).willReturn(savedProduct);
@@ -54,12 +58,13 @@ class ProductServiceTest {
         // then
         assertThat(result).isEqualTo(1L);
         verify(productRepository).save(any(Product.class));
+        verify(inventoryClient).createInventory(any());
     }
 
     @Test
     void SELLER_아니면_상품_등록_실패() {
         // given
-        CreateProductRequest request = new CreateProductRequest("사과", "맛있는 사과", 1000L);
+        CreateProductRequest request = new CreateProductRequest("사과", "맛있는 사과", 1000L, 10);
 
         // when & then
         assertThatThrownBy(() -> productService.createProduct(1L, "MEMBER", request))
@@ -122,7 +127,7 @@ class ProductServiceTest {
         ReflectionTestUtils.setField(product, "id", 1L);
         given(productRepository.findById(1L)).willReturn(Optional.of(product));
 
-        CreateProductRequest request = new CreateProductRequest("수정된 사과", "더 맛있는 사과", 2000L);
+        CreateProductRequest request = new CreateProductRequest("수정된 사과", "더 맛있는 사과", 2000L, null);
 
         // when
         Long result = productService.updateProduct(1L, sellerId, request);
@@ -140,7 +145,7 @@ class ProductServiceTest {
         given(productRepository.findById(1L)).willReturn(Optional.of(product));
 
         // when & then
-        assertThatThrownBy(() -> productService.updateProduct(1L, 2L, new CreateProductRequest("수정", "수정", 2000L)))
+        assertThatThrownBy(() -> productService.updateProduct(1L, 2L, new CreateProductRequest("수정", "수정", 2000L, null)))
                 .isInstanceOf(InvalidParameterException.class);
     }
 
@@ -150,7 +155,7 @@ class ProductServiceTest {
         given(productRepository.findById(1L)).willReturn(Optional.empty());
 
         // when & then
-        assertThatThrownBy(() -> productService.updateProduct(1L, 1L, new CreateProductRequest("수정", "수정", 2000L)))
+        assertThatThrownBy(() -> productService.updateProduct(1L, 1L, new CreateProductRequest("수정", "수정", 2000L, null)))
                 .isInstanceOf(EntityNotFoundException.class);
     }
 

@@ -3,6 +3,7 @@ package com.ecommerce.productservice.domain.dto.req;
 public record CreateProductRequest(
         String name,
         String description,
-        Long price
+        Long price,
+        Integer quantity
 ) {
 }
