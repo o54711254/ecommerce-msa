@@ -11,6 +11,7 @@ import com.ecommerce.productservice.infra.feign.inventory.InventoryClient;
 import com.ecommerce.productservice.infra.feign.inventory.InventoryResponse;
 import com.ecommerce.productservice.infra.feign.member.MemberClient;
 import com.ecommerce.productservice.infra.feign.member.SellerResponse;
+import io.github.resilience4j.retry.annotation.Retry;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ public class ProductService {
     private final InventoryClient inventoryClient;
     private final MemberClient memberClient;
 
+    @Retry(name = "inventory-service")
     @Transactional
     public Long createProduct(Long sellerId, String role, CreateProductRequest request) {
         if (!role.equals("SELLER")) {
@@ -42,6 +44,7 @@ public class ProductService {
         return productId;
     }
 
+    @Retry(name = "inventory-service")
     @Transactional(readOnly = true)
     public ProductDetailResponse getProductDetail(Long id) {
         Product product = productRepository.findById(id).orElseThrow(EntityNotFoundException::new);
@@ -87,6 +90,7 @@ public class ProductService {
         return product.getId();
     }
 
+    @Retry(name = "inventory-service")
     @Transactional
     public void deleteProduct(Long id, Long sellerId) {
         Product product = productRepository.findById(id).orElseThrow(EntityNotFoundException::new);

@@ -6,7 +6,9 @@ import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.entity.ProductStatus;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
-import com.ecommerce.productservice.infra.feign.InventoryClient;
+import com.ecommerce.productservice.infra.feign.inventory.InventoryClient;
+import com.ecommerce.productservice.infra.feign.member.MemberClient;
+import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,9 +22,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.security.InvalidParameterException;
 import java.util.List;
-
-import jakarta.persistence.EntityNotFoundException;
-
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,6 +38,9 @@ class ProductServiceTest {
 
     @Mock
     private InventoryClient inventoryClient;
+
+    @Mock
+    private MemberClient memberClient;
 
     @InjectMocks
     private ProductService productService;

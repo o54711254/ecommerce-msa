@@ -53,6 +53,12 @@ dependencies {
     annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
     annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
 
+    // 서킷브레이커
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j")
+
+    // Feign과의 연동을 위해 필요
+    implementation("io.github.resilience4j:resilience4j-feign")
+
     implementation 'org.springframework.boot:spring-boot-starter'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
