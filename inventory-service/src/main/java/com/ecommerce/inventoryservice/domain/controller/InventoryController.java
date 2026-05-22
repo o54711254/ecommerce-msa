@@ -1,8 +1,10 @@
 package com.ecommerce.inventoryservice.domain.controller;
 
 import com.ecommerce.inventoryservice.domain.dto.req.CreateInventoryRequest;
+import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +29,13 @@ public class InventoryController {
     @DeleteMapping("/{productId}")
     public ResponseEntity<Void> deleteInventory(@PathVariable Long productId) {
         inventoryService.deleteInventoryByProductId(productId);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{productId}")
+    public ResponseEntity<Void> addProductInventory(@PathVariable Long productId,
+                                                    @RequestBody @Valid UpdateInventoryRequest request) {
+        inventoryService.addProductInventory(productId, request);
         return ResponseEntity.ok().build();
     }
 }

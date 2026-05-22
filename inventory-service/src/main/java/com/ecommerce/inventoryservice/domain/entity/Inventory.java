@@ -29,4 +29,9 @@ public class Inventory extends BaseEntity {
     public static Inventory create(Long productId, Integer quantity) {
         return new Inventory(productId, quantity);
     }
+
+    public void addQuantity(int quantity) {
+        if (quantity <= 0) throw new IllegalArgumentException("수량은 1 이상이어야 합니다");
+        this.quantity += quantity;
+    }
 }
