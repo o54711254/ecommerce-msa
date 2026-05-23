@@ -4,12 +4,15 @@ import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductDetailResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.ecommerce.productservice.domain.dto.res.ProductPriceResponse;
 import com.ecommerce.productservice.domain.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -54,5 +57,10 @@ public class ProductController {
                                            @RequestHeader("X-Member-Id") Long sellerId) {
         productService.deleteProduct(id, sellerId);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/price")
+    public ResponseEntity<ProductPriceResponse> getPriceMap(@RequestParam List<Long> productIds) {
+        return ResponseEntity.ok(productService.getPriceMap(productIds));
     }
 }

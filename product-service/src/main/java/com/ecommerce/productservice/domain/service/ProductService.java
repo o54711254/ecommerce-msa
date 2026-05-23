@@ -4,6 +4,7 @@ import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductDetailResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.ecommerce.productservice.domain.dto.res.ProductPriceResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
 import com.ecommerce.productservice.infra.feign.inventory.CreateInventoryRequest;
@@ -16,10 +17,12 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.InvalidParameterException;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -99,5 +102,10 @@ public class ProductService {
         }
         productRepository.delete(product);
         inventoryClient.deleteInventory(id);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductPriceResponse getPriceMap(List<Long> productIds) {
+        return new ProductPriceResponse(productRepository.getPriceMap(productIds));
     }
 }

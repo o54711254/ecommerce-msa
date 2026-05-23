@@ -5,8 +5,6 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.math.BigDecimal;
-
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
@@ -17,7 +15,7 @@ public class OrderItem {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "order_id")
     private Order order;
 
@@ -28,5 +26,19 @@ public class OrderItem {
     private int quantity;
 
     @Column(name = "item_price", nullable = false)
-    private BigDecimal itemPrice;
+    private Long itemPrice;
+
+    private OrderItem(Long productId, int quantity, Long itemPrice) {
+        this.productId = productId;
+        this.quantity = quantity;
+        this.itemPrice = itemPrice;
+    }
+
+    public static OrderItem create(Long productId, int quantity, Long itemPrice) {
+        return new OrderItem(productId, quantity, itemPrice);
+    }
+
+    void assignOrder(Order order) {
+        this.order = order;
+    }
 }

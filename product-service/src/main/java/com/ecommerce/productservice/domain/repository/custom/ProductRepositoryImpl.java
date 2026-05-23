@@ -13,6 +13,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static com.ecommerce.productservice.domain.entity.QProduct.product;
 
@@ -65,6 +67,19 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
         builder.and(eqSellerId(sellerId));
         builder.and(nameContains(request));
         return builder;
+    }
+
+    @Override
+    public Map<Long, Long> getPriceMap(List<Long> productIds) {
+        return jpaQueryFactory.select(product.id, product.price)
+                .from(product)
+                .where(product.id.in(productIds))
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(product.id),
+                        tuple -> tuple.get(product.price)
+                ));
     }
 
     private BooleanExpression eqSellerId(Long sellerId) {
