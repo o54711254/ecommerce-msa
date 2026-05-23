@@ -4,6 +4,7 @@ import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductDetailResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.ecommerce.productservice.domain.dto.res.ProductNameResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductPriceResponse;
 import com.ecommerce.productservice.domain.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -62,5 +64,10 @@ public class ProductController {
     @GetMapping("/price")
     public ResponseEntity<ProductPriceResponse> getPriceMap(@RequestParam List<Long> productIds) {
         return ResponseEntity.ok(productService.getPriceMap(productIds));
+    }
+
+    @GetMapping("/names")
+    public ResponseEntity<ProductNameResponse> getNamesMap(@RequestParam List<Long> productIds) {
+        return ResponseEntity.ok(productService.getNamesMap(productIds));
     }
 }

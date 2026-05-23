@@ -12,4 +12,5 @@ public interface ProductRepositoryCustom {
     Page<ProductListResponse> getProductPage(SearchRequest request, Pageable pageable);
     Page<ProductListResponse> getMyProductPage(Long sellerId, SearchRequest request, Pageable pageable);
     Map<Long, Long> getPriceMap(List<Long> productIds);
+    Map<Long, String> getNamesMap(List<Long> productIds);
 }

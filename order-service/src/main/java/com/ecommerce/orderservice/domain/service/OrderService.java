@@ -5,10 +5,14 @@ import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryR
 import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
 import com.ecommerce.orderservice.domain.dto.req.CreateOrderItemRequest;
 import com.ecommerce.orderservice.domain.dto.req.CreateOrderRequest;
+import com.ecommerce.orderservice.domain.dto.res.OrderItemResponse;
+import com.ecommerce.orderservice.domain.dto.res.OrderListResponse;
+import com.ecommerce.orderservice.domain.dto.res.OrderResponse;
 import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.client.product.ProductClient;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,46 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
+
+    @Transactional(readOnly = true)
+    public List<OrderListResponse> getOrderList(Long memberId) {
+        return orderRepository.getOrderList(memberId);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrderDetail(Long memberId, Long id) {
+        Order order = orderRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+        if (!order.getMemberId().equals(memberId)) {
+            throw new IllegalStateException("본인 주문만 조회할 수 있습니다");
+        }
+        List<OrderItem> orderItems = order.getOrderItems();
+
+        List<Long> productIds = orderItems.stream().map(OrderItem::getProductId).toList();
+        Map<Long, String> productNames = productClient.getNamesMap(productIds).getBody().nameMap();
+
+        List<OrderItemResponse> orderItemResponses = orderItems.stream()
+                .map(item -> {
+                    int quantity = item.getQuantity();
+                    Long price = item.getItemPrice();
+                    return OrderItemResponse.builder()
+                            .orderItemId(item.getId())
+                            .productId(item.getProductId())
+                            .productName(productNames.get(item.getProductId()))
+                            .quantity(quantity)
+                            .itemPrice(price)
+                            .totalPrice(quantity * price)
+                            .build();
+                })
+                .toList();
+
+        return OrderResponse.builder()
+                .orderId(order.getId())
+                .orderStatus(order.getOrderStatus())
+                .createdAt(order.getCreatedAt())
+                .totalPrice(order.getTotalPrice())
+                .itemList(orderItemResponses)
+                .build();
+    }
 
     @Transactional
     public Long createOrder(Long memberId, CreateOrderRequest request) {

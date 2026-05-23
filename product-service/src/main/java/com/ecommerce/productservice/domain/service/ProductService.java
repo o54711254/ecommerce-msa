@@ -4,6 +4,7 @@ import com.ecommerce.productservice.domain.dto.req.CreateProductRequest;
 import com.ecommerce.productservice.domain.dto.req.SearchRequest;
 import com.ecommerce.productservice.domain.dto.res.ProductDetailResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductListResponse;
+import com.ecommerce.productservice.domain.dto.res.ProductNameResponse;
 import com.ecommerce.productservice.domain.dto.res.ProductPriceResponse;
 import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.security.InvalidParameterException;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -106,5 +108,10 @@ public class ProductService {
     @Transactional(readOnly = true)
     public ProductPriceResponse getPriceMap(List<Long> productIds) {
         return new ProductPriceResponse(productRepository.getPriceMap(productIds));
+    }
+
+    @Transactional(readOnly = true)
+    public ProductNameResponse getNamesMap(List<Long> productIds) {
+        return new ProductNameResponse(productRepository.getNamesMap(productIds));
     }
 }

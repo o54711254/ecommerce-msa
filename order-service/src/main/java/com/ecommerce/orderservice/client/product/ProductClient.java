@@ -1,5 +1,6 @@
 package com.ecommerce.orderservice.client.product;
 
+import com.ecommerce.orderservice.client.product.dto.ProductNameResponse;
 import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
@@ -13,4 +14,8 @@ public interface ProductClient {
 
     @GetMapping("/api/v1/product/price")
     ResponseEntity<ProductPriceResponse> getPriceMap(@RequestParam List<Long> productIds);
+
+    @GetMapping("/api/v1/product/names")
+    ResponseEntity<ProductNameResponse> getNamesMap(@RequestParam List<Long> productIds);
+
 }

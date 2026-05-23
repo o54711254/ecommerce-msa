@@ -82,6 +82,19 @@ public class ProductRepositoryImpl implements ProductRepositoryCustom {
                 ));
     }
 
+    @Override
+    public Map<Long, String> getNamesMap(List<Long> productIds) {
+        return jpaQueryFactory.select(product.id, product.name)
+                .from(product)
+                .where(product.id.in(productIds))
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(product.id),
+                        tuple -> tuple.get(product.name)
+                ));
+    }
+
     private BooleanExpression eqSellerId(Long sellerId) {
         return sellerId == null ? null : product.sellerId.eq(sellerId);
     }
