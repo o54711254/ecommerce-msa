@@ -1,5 +1,7 @@
-package com.ecommerce.productservice.infra.feign.inventory;
+package com.ecommerce.productservice.client.inventory;
 
+import com.ecommerce.productservice.client.inventory.dto.req.CreateInventoryRequest;
+import com.ecommerce.productservice.client.inventory.dto.res.InventoryResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 

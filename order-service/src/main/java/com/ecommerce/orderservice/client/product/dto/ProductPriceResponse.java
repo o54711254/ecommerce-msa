@@ -1,4 +1,4 @@
-package com.ecommerce.orderservice.feign.product;
+package com.ecommerce.orderservice.client.product.dto;
 
 import java.util.Map;
 

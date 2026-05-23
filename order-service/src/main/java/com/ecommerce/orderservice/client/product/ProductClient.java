@@ -1,5 +1,6 @@
-package com.ecommerce.orderservice.feign.product;
+package com.ecommerce.orderservice.client.product;
 
+import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;

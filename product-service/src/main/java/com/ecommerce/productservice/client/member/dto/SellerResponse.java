@@ -1,4 +1,4 @@
-package com.ecommerce.productservice.infra.feign.member;
+package com.ecommerce.productservice.client.member.dto;
 
 public record SellerResponse(
         String name,

@@ -1,4 +1,4 @@
-package com.ecommerce.productservice.infra.feign.inventory;
+package com.ecommerce.productservice.client.inventory.dto.res;
 
 public record InventoryResponse(
         Long productId,

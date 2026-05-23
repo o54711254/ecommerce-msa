@@ -1,5 +1,6 @@
-package com.ecommerce.productservice.infra.feign.member;
+package com.ecommerce.productservice.client.member;
 
+import com.ecommerce.productservice.client.member.dto.SellerResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
