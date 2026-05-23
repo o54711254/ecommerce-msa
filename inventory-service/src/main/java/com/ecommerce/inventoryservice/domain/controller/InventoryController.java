@@ -1,6 +1,7 @@
 package com.ecommerce.inventoryservice.domain.controller;
 
 import com.ecommerce.inventoryservice.domain.dto.req.CreateInventoryRequest;
+import com.ecommerce.inventoryservice.domain.dto.req.DecreaseProductInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
@@ -36,6 +37,12 @@ public class InventoryController {
     public ResponseEntity<Void> addProductInventory(@PathVariable Long productId,
                                                     @RequestBody @Valid UpdateInventoryRequest request) {
         inventoryService.addProductInventory(productId, request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PutMapping("/decrease")
+    public ResponseEntity<Void> decreaseInventory(@RequestBody DecreaseProductInventoryRequest request) {
+        inventoryService.decreaseProductInventory(request);
         return ResponseEntity.ok().build();
     }
 }

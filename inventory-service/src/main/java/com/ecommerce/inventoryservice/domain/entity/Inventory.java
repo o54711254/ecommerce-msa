@@ -34,4 +34,11 @@ public class Inventory extends BaseEntity {
         if (quantity <= 0) throw new IllegalArgumentException("수량은 1 이상이어야 합니다");
         this.quantity += quantity;
     }
+
+    public void decreaseQuantity(int quantity) {
+        if(this.quantity < quantity){
+            throw new IllegalArgumentException("재고 부족");
+        }
+        this.quantity -= quantity;
+    }
 }
