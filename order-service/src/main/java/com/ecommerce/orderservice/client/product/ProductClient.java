@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "product-service")
+@FeignClient(name = "product-service", fallbackFactory = ProductClientFallbackFactory.class)
 public interface ProductClient {
 
     @GetMapping("/api/v1/product/price")

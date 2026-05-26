@@ -12,7 +12,8 @@ import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.client.product.ProductClient;
-import jakarta.persistence.EntityNotFoundException;
+import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
+import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,9 +36,9 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderDetail(Long memberId, Long id) {
-        Order order = orderRepository.findById(id).orElseThrow(EntityNotFoundException::new);
+        Order order = orderRepository.findById(id).orElseThrow(OrderNotFoundException::new);
         if (!order.getMemberId().equals(memberId)) {
-            throw new IllegalStateException("본인 주문만 조회할 수 있습니다");
+            throw new OrderAccessDeniedException();
         }
         List<OrderItem> orderItems = order.getOrderItems();
 

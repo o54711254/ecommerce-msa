@@ -1,5 +1,7 @@
 package com.ecommerce.inventoryservice.domain.entity;
 
+import com.ecommerce.inventoryservice.global.exception.custom.InsufficientStockException;
+import com.ecommerce.inventoryservice.global.exception.custom.InvalidQuantityException;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -31,13 +33,13 @@ public class Inventory extends BaseEntity {
     }
 
     public void addQuantity(int quantity) {
-        if (quantity <= 0) throw new IllegalArgumentException("수량은 1 이상이어야 합니다");
+        if (quantity <= 0) throw new InvalidQuantityException();
         this.quantity += quantity;
     }
 
     public void decreaseQuantity(int quantity) {
-        if(this.quantity < quantity){
-            throw new IllegalArgumentException("재고 부족");
+        if (this.quantity < quantity) {
+            throw new InsufficientStockException();
         }
         this.quantity -= quantity;
     }

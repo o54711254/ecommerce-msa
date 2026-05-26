@@ -7,7 +7,7 @@ import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +59,6 @@ public class InventoryService {
 
     private Inventory getInventory(Long productId) {
         return inventoryRepository.findByProductId(productId)
-                .orElseThrow(EntityNotFoundException::new);
+                .orElseThrow(InventoryNotFoundException::new);
     }
 }

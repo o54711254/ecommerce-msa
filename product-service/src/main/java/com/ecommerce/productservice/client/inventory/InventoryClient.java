@@ -6,7 +6,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-@FeignClient(name = "inventory-service", fallback = InventoryClientFallback.class)
+@FeignClient(name = "inventory-service", fallbackFactory = InventoryClientFallbackFactory.class)
 public interface InventoryClient {
 
     @PostMapping("/api/v1/inventory")
