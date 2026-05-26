@@ -1,4 +1,6 @@
 CLAUDE.md
+HELP.md
+.gitattributes
 
 # 설정 파일 (민감 정보)
 *.yml
