@@ -1,6 +1,9 @@
 package com.ecommerce.gatewayservice.filter;
 
+import com.ecommerce.gatewayservice.global.exception.ErrorCode;
+import com.ecommerce.gatewayservice.global.exception.ErrorResponse;
 import com.ecommerce.gatewayservice.util.JwtUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -8,7 +11,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -30,9 +35,11 @@ import java.util.Map;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -48,13 +55,13 @@ public class AuthenticationFilter extends OncePerRequestFilter {
         // 2. Authorization 헤더 존재 여부 확인
         String authorizationHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
         if (authorizationHeader == null) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "No authorization header");
+            writeErrorResponse(response, ErrorCode.UNAUTHORIZED);
             return;
         }
 
         // 3. Bearer 접두사 확인 후 토큰 추출
         if (!authorizationHeader.startsWith("Bearer ")) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token format");
+            writeErrorResponse(response, ErrorCode.UNAUTHORIZED);
             return;
         }
         String token = authorizationHeader.substring(7);
@@ -72,8 +79,16 @@ public class AuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(new AddHeaderRequestWrapper(request, headerMap), response);
 
         } catch (JwtException e) {
-            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token: " + e.getMessage());
+            log.warn("JWT 검증 실패 - {}", e.getMessage());
+            writeErrorResponse(response, ErrorCode.UNAUTHORIZED);
         }
+    }
+
+    private void writeErrorResponse(HttpServletResponse response, ErrorCode errorCode) throws IOException {
+        response.setStatus(errorCode.getStatus().value());
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write(objectMapper.writeValueAsString(ErrorResponse.of(errorCode)));
     }
 
     // HttpServletRequest에 커스텀 헤더를 추가하기 위한 래퍼
