@@ -1,0 +1,34 @@
+package com.ecommerce.paymentservice.domain.controller;
+
+import com.ecommerce.paymentservice.domain.service.PaymentService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+@RequestMapping("/api/v1/payment")
+@RequiredArgsConstructor
+@RestController
+public class PaymentController {
+
+    private final PaymentService paymentService;
+
+    @GetMapping
+    public ResponseEntity<?> getPaymentList(@RequestHeader("X-Member-Id") Long memberId) {
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/id")
+    public ResponseEntity<?> getPaymentDetail() {
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createPayment() {
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/webhook")
+    public ResponseEntity<?> webookPayment() {
+        return ResponseEntity.ok().build();
+    }
+}
