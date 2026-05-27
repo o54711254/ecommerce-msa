@@ -1,5 +1,6 @@
 package com.ecommerce.paymentservice.domain.controller;
 
+import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
 import com.ecommerce.paymentservice.domain.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +24,9 @@ public class PaymentController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createPayment() {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<Long> createPayment(@RequestHeader("X-Member-Id") Long memberId,
+                                           @RequestBody CreatePaymentRequest request) {
+        return ResponseEntity.ok(paymentService.createPayment(memberId, request));
     }
 
     @PostMapping("/webhook")

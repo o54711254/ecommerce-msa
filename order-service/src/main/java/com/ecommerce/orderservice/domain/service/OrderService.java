@@ -3,6 +3,9 @@ package com.ecommerce.orderservice.domain.service;
 import com.ecommerce.orderservice.client.inventory.InventoryClient;
 import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryRequest;
 import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
+import com.ecommerce.orderservice.client.payment.PaymentClient;
+import com.ecommerce.orderservice.client.payment.dto.req.CreatePaymentRequest;
+import com.ecommerce.orderservice.client.product.ProductClient;
 import com.ecommerce.orderservice.domain.dto.req.CreateOrderItemRequest;
 import com.ecommerce.orderservice.domain.dto.req.CreateOrderRequest;
 import com.ecommerce.orderservice.domain.dto.res.OrderItemResponse;
@@ -11,7 +14,6 @@ import com.ecommerce.orderservice.domain.dto.res.OrderResponse;
 import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
-import com.ecommerce.orderservice.client.product.ProductClient;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +30,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
+    private final PaymentClient paymentClient;
 
     @Transactional(readOnly = true)
     public List<OrderListResponse> getOrderList(Long memberId) {
@@ -91,6 +94,11 @@ public class OrderService {
                 .toList();
 
         Order order = Order.create(memberId, orderItems);
-        return orderRepository.save(order).getId();
+        orderRepository.save(order);
+
+        // 결제 생성
+        paymentClient.createPayment(memberId, new CreatePaymentRequest(order.getId(), order.getTotalPrice()));
+
+        return order.getId();
     }
 }

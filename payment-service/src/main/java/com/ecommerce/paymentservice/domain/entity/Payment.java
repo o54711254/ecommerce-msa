@@ -1,11 +1,14 @@
 package com.ecommerce.paymentservice.domain.entity;
 
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Getter
 @Table(name = "payment")
 @Entity
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Payment extends BaseEntity {
 
     @Id
@@ -23,4 +26,15 @@ public class Payment extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus paymentStatus;
+
+    private Payment(Long memberId, Long orderId, Long amount) {
+        this.memberId = memberId;
+        this.orderId = orderId;
+        this.amount = amount;
+        this.paymentStatus = PaymentStatus.PENDING;
+    }
+
+    public static Payment create(Long memberId, Long orderId, Long amount){
+        return new Payment(memberId, orderId, amount);
+    }
 }
