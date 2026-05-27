@@ -5,7 +5,7 @@ import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -59,7 +59,7 @@ class InventoryServiceTest {
         given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> inventoryService.getInventoryByProductId(1L))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(InventoryNotFoundException.class);
     }
 
     @Test
@@ -84,6 +84,6 @@ class InventoryServiceTest {
         given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> inventoryService.addProductInventory(1L, new UpdateInventoryRequest(5)))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(InventoryNotFoundException.class);
     }
 }

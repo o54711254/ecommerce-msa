@@ -2,6 +2,9 @@ package com.ecommerce.orderservice.domain.service;
 
 import com.ecommerce.orderservice.client.inventory.InventoryClient;
 import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryRequest;
+import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
+import com.ecommerce.orderservice.client.payment.PaymentClient;
+import com.ecommerce.orderservice.client.payment.dto.req.CreatePaymentRequest;
 import com.ecommerce.orderservice.client.product.ProductClient;
 import com.ecommerce.orderservice.client.product.dto.ProductNameResponse;
 import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
@@ -13,9 +16,11 @@ import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
+import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -31,11 +36,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
-
-import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
-import org.mockito.ArgumentCaptor;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -43,6 +46,7 @@ class OrderServiceTest {
     @Mock private OrderRepository orderRepository;
     @Mock private ProductClient productClient;
     @Mock private InventoryClient inventoryClient;
+    @Mock private PaymentClient paymentClient;
     @InjectMocks private OrderService orderService;
 
     @Test
@@ -87,7 +91,7 @@ class OrderServiceTest {
         given(orderRepository.findById(any())).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> orderService.getOrderDetail(1L, 999L))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(OrderNotFoundException.class);
     }
 
     @Test
@@ -99,8 +103,8 @@ class OrderServiceTest {
         given(orderRepository.findById(10L)).willReturn(Optional.of(order));
 
         assertThatThrownBy(() -> orderService.getOrderDetail(otherMemberId, 10L))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("본인 주문만 조회할 수 있습니다");
+                .isInstanceOf(OrderAccessDeniedException.class)
+                .hasMessage("본인 주문만 조회할 수 있습니다.");
     }
 
     @Test
@@ -115,13 +119,14 @@ class OrderServiceTest {
                 .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
         given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
                 .willReturn(ResponseEntity.ok().build());
+        given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
+                .willReturn(ResponseEntity.ok(1L));
 
-        Order savedOrder = Order.create(memberId, List.of(
-                OrderItem.create(100L, 2, 5000L),
-                OrderItem.create(200L, 1, 3000L)
-        ));
-        ReflectionTestUtils.setField(savedOrder, "id", 1L);
-        given(orderRepository.save(any(Order.class))).willReturn(savedOrder);
+        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
+            Order saved = invocation.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 1L);
+            return saved;
+        });
 
         Long orderId = orderService.createOrder(memberId, request);
 
@@ -143,6 +148,8 @@ class OrderServiceTest {
                 .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L))));
         given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
                 .willReturn(ResponseEntity.ok().build());
+        given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
+                .willReturn(ResponseEntity.ok(1L));
         given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
             Order saved = invocation.getArgument(0);
             ReflectionTestUtils.setField(saved, "id", 1L);

@@ -1,5 +1,6 @@
 package com.ecommerce.inventoryservice.domain.entity;
 
+import com.ecommerce.inventoryservice.global.exception.custom.InvalidQuantityException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -21,7 +22,7 @@ class InventoryTest {
         Inventory inventory = Inventory.create(1L, 10);
 
         assertThatThrownBy(() -> inventory.addQuantity(-1))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidQuantityException.class);
     }
 
     @Test
@@ -29,6 +30,6 @@ class InventoryTest {
         Inventory inventory = Inventory.create(1L, 10);
 
         assertThatThrownBy(() -> inventory.addQuantity(0))
-                .isInstanceOf(IllegalArgumentException.class);
+                .isInstanceOf(InvalidQuantityException.class);
     }
 }

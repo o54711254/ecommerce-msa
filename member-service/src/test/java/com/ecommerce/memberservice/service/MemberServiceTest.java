@@ -6,9 +6,11 @@ import com.ecommerce.memberservice.dto.res.LoginResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import com.ecommerce.memberservice.entity.Member;
 import com.ecommerce.memberservice.entity.Role;
+import com.ecommerce.memberservice.global.exception.custom.DuplicateEmailException;
+import com.ecommerce.memberservice.global.exception.custom.InvalidPasswordException;
+import com.ecommerce.memberservice.global.exception.custom.MemberNotFoundException;
 import com.ecommerce.memberservice.repository.MemberRepository;
 import com.ecommerce.memberservice.util.JwtUtil;
-import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -76,8 +78,8 @@ class MemberServiceTest {
         given(memberRepository.findByEmail("test@test.com")).willReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> memberService.join(request, Role.MEMBER))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("이미 가입된 이메일입니다");
+                .isInstanceOf(DuplicateEmailException.class)
+                .hasMessageContaining("이미 사용 중인 이메일입니다");
     }
 
     @Test
@@ -101,8 +103,8 @@ class MemberServiceTest {
         given(memberRepository.findByEmail("none@test.com")).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> memberService.login(request))
-                .isInstanceOf(EntityNotFoundException.class)
-                .hasMessageContaining("존재하지 않는 이메일입니다");
+                .isInstanceOf(MemberNotFoundException.class)
+                .hasMessageContaining("회원을 찾을 수 없습니다");
     }
 
     @Test
@@ -114,7 +116,7 @@ class MemberServiceTest {
         given(passwordEncoder.matches("wrong", "encoded")).willReturn(false);
 
         assertThatThrownBy(() -> memberService.login(request))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(InvalidPasswordException.class)
                 .hasMessageContaining("비밀번호가 일치하지 않습니다");
     }
 }

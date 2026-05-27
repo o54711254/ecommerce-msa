@@ -8,7 +8,9 @@ import com.ecommerce.productservice.domain.entity.ProductStatus;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
 import com.ecommerce.productservice.client.inventory.InventoryClient;
 import com.ecommerce.productservice.client.member.MemberClient;
-import jakarta.persistence.EntityNotFoundException;
+import com.ecommerce.productservice.global.exception.custom.ForbiddenException;
+import com.ecommerce.productservice.global.exception.custom.ProductAccessDeniedException;
+import com.ecommerce.productservice.global.exception.custom.ProductNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,7 +22,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Optional;
 
@@ -70,7 +71,7 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.createProduct(1L, "MEMBER", request))
-                .isInstanceOf(InvalidParameterException.class);
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
@@ -118,7 +119,7 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.getMyProductPage(1L, "MEMBER", request, pageable))
-                .isInstanceOf(InvalidParameterException.class);
+                .isInstanceOf(ForbiddenException.class);
     }
 
     @Test
@@ -148,7 +149,7 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.updateProduct(1L, 2L, new CreateProductRequest("수정", "수정", 2000L, null)))
-                .isInstanceOf(InvalidParameterException.class);
+                .isInstanceOf(ProductAccessDeniedException.class);
     }
 
     @Test
@@ -158,7 +159,7 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.updateProduct(1L, 1L, new CreateProductRequest("수정", "수정", 2000L, null)))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ProductNotFoundException.class);
     }
 
     @Test
@@ -183,7 +184,7 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.deleteProduct(1L, 2L))
-                .isInstanceOf(InvalidParameterException.class);
+                .isInstanceOf(ProductAccessDeniedException.class);
     }
 
     @Test
@@ -193,6 +194,6 @@ class ProductServiceTest {
 
         // when & then
         assertThatThrownBy(() -> productService.deleteProduct(1L, 1L))
-                .isInstanceOf(EntityNotFoundException.class);
+                .isInstanceOf(ProductNotFoundException.class);
     }
 }
