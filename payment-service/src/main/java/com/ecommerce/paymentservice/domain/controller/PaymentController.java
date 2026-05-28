@@ -1,6 +1,7 @@
 package com.ecommerce.paymentservice.domain.controller;
 
 import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
+import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
 import com.ecommerce.paymentservice.domain.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,8 @@ public class PaymentController {
     }
 
     @PostMapping("/webhook")
-    public ResponseEntity<?> webookPayment() {
+    public ResponseEntity<?> webhookPayment(@RequestBody PaymentWebhookRequest request) {
+        paymentService.webhook(request);
         return ResponseEntity.ok().build();
     }
 }

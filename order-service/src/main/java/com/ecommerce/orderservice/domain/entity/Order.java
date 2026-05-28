@@ -38,6 +38,10 @@ public class Order extends BaseEntity {
         orderItems.forEach(item -> item.assignOrder(this));
     }
 
+    public void updateStatus(OrderStatus status) {
+        this.orderStatus = status;
+    }
+
     public static Order create(Long memberId, List<OrderItem> orderItems) {
         Long totalPrice = orderItems.stream()
                 .mapToLong(item -> item.getItemPrice() * item.getQuantity())

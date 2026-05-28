@@ -34,6 +34,10 @@ public class Payment extends BaseEntity {
         this.paymentStatus = PaymentStatus.PENDING;
     }
 
+    public void updatePaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
     public static Payment create(Long memberId, Long orderId, Long amount){
         return new Payment(memberId, orderId, amount);
     }

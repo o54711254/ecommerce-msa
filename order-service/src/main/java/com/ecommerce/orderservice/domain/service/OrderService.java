@@ -13,6 +13,7 @@ import com.ecommerce.orderservice.domain.dto.res.OrderListResponse;
 import com.ecommerce.orderservice.domain.dto.res.OrderResponse;
 import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
+import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
@@ -70,6 +71,12 @@ public class OrderService {
                 .totalPrice(order.getTotalPrice())
                 .itemList(orderItemResponses)
                 .build();
+    }
+
+    @Transactional
+    public void markAsPaid(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
+        order.updateStatus(OrderStatus.PAID);
     }
 
     @Transactional
