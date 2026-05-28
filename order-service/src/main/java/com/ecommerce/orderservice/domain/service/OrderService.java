@@ -17,6 +17,9 @@ import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
+import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
+import com.ecommerce.orderservice.kafka.dto.OrderItemInfo;
+import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +35,7 @@ public class OrderService {
     private final ProductClient productClient;
     private final InventoryClient inventoryClient;
     private final PaymentClient paymentClient;
+    private final OrderEventProducer orderEventProducer;
 
     @Transactional(readOnly = true)
     public List<OrderListResponse> getOrderList(Long memberId) {
@@ -40,7 +44,7 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public OrderResponse getOrderDetail(Long memberId, Long id) {
-        Order order = orderRepository.findById(id).orElseThrow(OrderNotFoundException::new);
+        Order order = getOrder(id);
         if (!order.getMemberId().equals(memberId)) {
             throw new OrderAccessDeniedException();
         }
@@ -74,10 +78,21 @@ public class OrderService {
     }
 
     @Transactional
-    public void markAsPaid(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
-        order.updateStatus(OrderStatus.PAID);
+    public void updateOrderStatus(Long orderId, OrderStatus orderStatus) {
+        Order order = getOrder(orderId);
+        order.updateStatus(orderStatus);
     }
+
+    @Transactional(readOnly = true)
+    public void orderFailed(Long orderId) {
+        Order order = getOrder(orderId);
+        List<OrderItemInfo> itemInfoList = order.getOrderItems().stream()
+                .map(item -> new OrderItemInfo(item.getProductId(), item.getQuantity()))
+                .toList();
+
+        orderEventProducer.sendOrderFailed(new OrderFailedEvent(orderId, itemInfoList));
+    }
+
 
     @Transactional
     public Long createOrder(Long memberId, CreateOrderRequest request) {
@@ -107,5 +122,9 @@ public class OrderService {
         paymentClient.createPayment(memberId, new CreatePaymentRequest(order.getId(), order.getTotalPrice()));
 
         return order.getId();
+    }
+
+    private Order getOrder(Long orderId) {
+        return orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
     }
 }

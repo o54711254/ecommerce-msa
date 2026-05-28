@@ -37,6 +37,11 @@ public class Inventory extends BaseEntity {
         this.quantity += quantity;
     }
 
+    public void increaseQuantity(int quantity) {
+        if (quantity <= 0) throw new InvalidQuantityException();
+        this.quantity += quantity;
+    }
+
     public void decreaseQuantity(int quantity) {
         if (this.quantity < quantity) {
             throw new InsufficientStockException();

@@ -8,6 +8,7 @@ import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
+import com.ecommerce.inventoryservice.kafka.dto.OrderItemInfo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,5 +61,15 @@ public class InventoryService {
     private Inventory getInventory(Long productId) {
         return inventoryRepository.findByProductId(productId)
                 .orElseThrow(InventoryNotFoundException::new);
+    }
+
+    @Transactional
+    public void increaseProductInventory(List<OrderItemInfo> request) {
+        List<Long> productIds =  request.stream().map(OrderItemInfo::productId).toList();
+        Map<Long, Integer> eaMap = request.stream().collect(Collectors.toMap(OrderItemInfo::productId, OrderItemInfo::quantity));
+        List<Inventory> inventoryList = inventoryRepository.findInventoriesByProductIdForLock(productIds);
+        for(Inventory inventory : inventoryList) {
+            inventory.increaseQuantity(eaMap.get(inventory.getProductId()));
+        }
     }
 }

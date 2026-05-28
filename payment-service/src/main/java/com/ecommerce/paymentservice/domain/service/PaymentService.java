@@ -6,6 +6,7 @@ import com.ecommerce.paymentservice.domain.entity.Payment;
 import com.ecommerce.paymentservice.domain.entity.PaymentStatus;
 import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
+import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.paymentservice.kafka.dto.PaymentSuccessEvent;
 import com.ecommerce.paymentservice.kafka.producer.PaymentEventProducer;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,7 @@ public class PaymentService {
             }
             case "FAILED" -> {
                 payment.updatePaymentStatus(PaymentStatus.FAILED);
+                paymentEventProducer.sendPaymentFailed(new PaymentFailedEvent(payment.getOrderId(), payment.getMemberId()));
             }
         }
     }

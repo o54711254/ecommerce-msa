@@ -47,7 +47,7 @@ public class AuthenticationFilter extends OncePerRequestFilter {
 
         // 1. 공개 엔드포인트는 토큰 검증 없이 통과
         String uri = request.getRequestURI();
-        if (uri.endsWith("/login") || uri.endsWith("/join") || uri.endsWith("/join/seller")) {
+        if (uri.endsWith("/login") || uri.endsWith("/join") || uri.endsWith("/join/seller") || uri.endsWith("/webhook")) {
             filterChain.doFilter(request, response);
             return;
         }

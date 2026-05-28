@@ -1,4 +1,4 @@
-package com.ecommerce.paymentservice.kafka.config;
+package com.ecommerce.orderservice.kafka.config;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
@@ -9,15 +9,8 @@ import org.springframework.kafka.config.TopicBuilder;
 public class KafkaConfig {
 
     @Bean
-    public NewTopic paymentSuccessTopic() {
-        return TopicBuilder.name("payment.success")
-                .partitions(3)
-                .build();
-    }
-
-    @Bean
-    public NewTopic paymentFailedTopic() {
-        return TopicBuilder.name("payment.failed")
+    public NewTopic orderFailedTopic() {
+        return TopicBuilder.name("order.failed")
                 .partitions(3)
                 .build();
     }
