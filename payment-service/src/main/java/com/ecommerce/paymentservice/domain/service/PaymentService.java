@@ -5,6 +5,7 @@ import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
 import com.ecommerce.paymentservice.domain.entity.Payment;
 import com.ecommerce.paymentservice.domain.entity.PaymentStatus;
 import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
+import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.paymentservice.kafka.dto.PaymentSuccessEvent;
@@ -26,10 +27,21 @@ public class PaymentService {
         return paymentRepository.save(payment).getId();
     }
 
+
+    @Transactional
+    public void cancelPaymentByOrderId(Long orderId) {
+        Payment payment = getPaymentByOrderId(orderId);
+        switch (payment.getPaymentStatus()) {
+            case SUCCESS -> payment.updatePaymentStatus(PaymentStatus.REFUNDED);
+            case PENDING -> payment.updatePaymentStatus(PaymentStatus.CANCELLED);
+            default -> throw new PaymentCancelNotAllowedException();
+        }
+    }
+
     @Transactional
     public void webhook(PaymentWebhookRequest request) {
         String status = request.status();
-        Payment payment = getPayment(request);
+        Payment payment = getPaymentByOrderId(request.orderId());
         switch (status) {
             case "SUCCESS" -> {
                 payment.updatePaymentStatus(PaymentStatus.SUCCESS);
@@ -44,7 +56,8 @@ public class PaymentService {
         }
     }
 
-    private Payment getPayment(PaymentWebhookRequest request) {
-        return paymentRepository.findByOrderId(request.orderId()).orElseThrow(PaymentNotFoundException::new);
+    private Payment getPaymentByOrderId(Long orderId) {
+        return paymentRepository.findByOrderId(orderId).orElseThrow(PaymentNotFoundException::new);
     }
+
 }

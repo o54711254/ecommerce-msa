@@ -30,6 +30,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.createPayment(memberId, request));
     }
 
+    @PatchMapping("/{orderId}/cancel")
+    public ResponseEntity<Void> cancelPayment(@PathVariable Long orderId) {
+        paymentService.cancelPaymentByOrderId(orderId);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/webhook")
     public ResponseEntity<?> webhookPayment(@RequestBody PaymentWebhookRequest request) {
         paymentService.webhook(request);

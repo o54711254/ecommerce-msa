@@ -4,7 +4,6 @@ import com.ecommerce.orderservice.domain.dto.req.CreateOrderRequest;
 import com.ecommerce.orderservice.domain.dto.res.OrderListResponse;
 import com.ecommerce.orderservice.domain.dto.res.OrderResponse;
 import com.ecommerce.orderservice.domain.service.OrderService;
-import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -33,5 +32,11 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrderDetail(@RequestHeader("X-Member-Id") Long memberId,
                                                         @PathVariable Long id) {
         return ResponseEntity.ok(orderService.getOrderDetail(memberId, id));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelOrder(@RequestHeader("X-Member-Id") Long memberId, @PathVariable Long id) {
+        orderService.cancelOrder(memberId, id);
+        return ResponseEntity.ok().build();
     }
 }

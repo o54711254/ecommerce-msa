@@ -1,5 +1,6 @@
 package com.ecommerce.orderservice.kafka.producer;
 
+import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -13,5 +14,9 @@ public class OrderEventProducer {
 
     public void sendOrderFailed(OrderFailedEvent event) {
         kafkaTemplate.send("order.failed", String.valueOf(event.orderId()), event);
+    }
+
+    public void sendOrderCancelled(OrderCancelEvent event) {
+        kafkaTemplate.send("order.cancelled", String.valueOf(event.orderId()), event);
     }
 }

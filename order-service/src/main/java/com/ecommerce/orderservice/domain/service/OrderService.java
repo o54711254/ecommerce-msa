@@ -16,7 +16,9 @@ import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
+import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
+import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderItemInfo;
 import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
@@ -78,6 +80,32 @@ public class OrderService {
     }
 
     @Transactional
+    public void cancelOrder(Long memberId, Long id) {
+        Order order = getOrder(id);
+        if (!order.getMemberId().equals(memberId)) {
+            throw new OrderAccessDeniedException();
+        }
+
+        OrderStatus currentStatus = order.getOrderStatus();
+        if (currentStatus != OrderStatus.PENDING && currentStatus != OrderStatus.PAID) {
+            throw new OrderCancelNotAllowedException();
+        }
+
+        // 결제 취소 (Feign, 동기)
+        paymentClient.cancelPayment(order.getId());
+
+        // 주문 상태: PENDING → CANCELED, PAID → REFUNDED
+        OrderStatus newStatus = (currentStatus == OrderStatus.PAID) ? OrderStatus.REFUNDED : OrderStatus.CANCELED;
+        order.updateStatus(newStatus);
+
+        // 재고 복구 이벤트 발행 (Kafka, 비동기)
+        List<OrderItemInfo> itemInfoList = order.getOrderItems().stream()
+                .map(item -> new OrderItemInfo(item.getProductId(), item.getQuantity()))
+                .toList();
+        orderEventProducer.sendOrderCancelled(new OrderCancelEvent(order.getId(), itemInfoList));
+    }
+
+    @Transactional
     public void updateOrderStatus(Long orderId, OrderStatus orderStatus) {
         Order order = getOrder(orderId);
         order.updateStatus(orderStatus);
@@ -127,4 +155,6 @@ public class OrderService {
     private Order getOrder(Long orderId) {
         return orderRepository.findById(orderId).orElseThrow(OrderNotFoundException::new);
     }
+
+
 }

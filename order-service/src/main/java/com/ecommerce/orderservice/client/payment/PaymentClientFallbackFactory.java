@@ -20,6 +20,11 @@ public class PaymentClientFallbackFactory implements FallbackFactory<PaymentClie
             public ResponseEntity<Long> createPayment(Long memberId, CreatePaymentRequest request) {
                 throw new ExternalServiceException("payment-service", cause);
             }
+
+            @Override
+            public ResponseEntity<Void> cancelPayment(Long orderId) {
+                throw new ExternalServiceException("payment-service", cause);
+            }
         };
     }
 }

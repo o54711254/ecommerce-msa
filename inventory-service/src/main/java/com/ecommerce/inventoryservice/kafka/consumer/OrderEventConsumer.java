@@ -1,7 +1,7 @@
 package com.ecommerce.inventoryservice.kafka.consumer;
 
-import com.ecommerce.inventoryservice.domain.dto.req.DecreaseProductInventoryRequest;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
+import com.ecommerce.inventoryservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.inventoryservice.kafka.dto.OrderFailedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +18,12 @@ public class OrderEventConsumer {
     @KafkaListener(topics = "order.failed", groupId = "inventoryGroup")
     public void handleOrderFailed(OrderFailedEvent event) {
         log.info("order.failed consumed: orderId={}", event.orderId());
+        inventoryService.increaseProductInventory(event.itemInfoList());
+    }
+
+    @KafkaListener(topics = "order.cancelled", groupId = "inventoryGroup")
+    public void handleOrderCancelled(OrderCancelEvent event) {
+        log.info("order.cancelled consumed: orderId={}", event.orderId());
         inventoryService.increaseProductInventory(event.itemInfoList());
     }
 }
