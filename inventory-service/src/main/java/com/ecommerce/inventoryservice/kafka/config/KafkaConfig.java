@@ -1,10 +1,8 @@
-package com.ecommerce.orderservice.kafka.config;
+package com.ecommerce.inventoryservice.kafka.config;
 
 import com.fasterxml.jackson.core.JsonParseException;
-import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.kafka.config.TopicBuilder;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
 import org.springframework.kafka.listener.DefaultErrorHandler;
@@ -12,20 +10,6 @@ import org.springframework.util.backoff.FixedBackOff;
 
 @Configuration
 public class KafkaConfig {
-
-    @Bean
-    public NewTopic orderFailedTopic() {
-        return TopicBuilder.name("order.failed")
-                .partitions(3)
-                .build();
-    }
-
-    @Bean
-    public NewTopic orderCancelledTopic() {
-        return TopicBuilder.name("order.cancelled")
-                .partitions(3)
-                .build();
-    }
 
     @Bean
     public DefaultErrorHandler errorHandler(KafkaTemplate<String, String> kafkaTemplate) {
