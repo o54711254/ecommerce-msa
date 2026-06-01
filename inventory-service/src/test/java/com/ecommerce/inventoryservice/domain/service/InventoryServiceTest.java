@@ -6,6 +6,8 @@ import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,66 +26,83 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class InventoryServiceTest {
 
-    @Mock
-    private InventoryRepository inventoryRepository;
+    @Mock private InventoryRepository inventoryRepository;
+    @InjectMocks private InventoryService inventoryService;
 
-    @InjectMocks
-    private InventoryService inventoryService;
+    @Nested
+    @DisplayName("createInventory - 재고 등록")
+    class CreateInventoryTest {
 
-    @Test
-    void 재고_등록_성공() {
-        CreateInventoryRequest request = new CreateInventoryRequest(1L, 10);
-        Inventory savedInventory = Inventory.create(request.productId(), request.quantity());
-        ReflectionTestUtils.setField(savedInventory, "id", 1L);
-        given(inventoryRepository.save(any(Inventory.class))).willReturn(savedInventory);
+        @Test
+        void 성공() {
+            CreateInventoryRequest request = new CreateInventoryRequest(1L, 10);
+            Inventory savedInventory = Inventory.create(request.productId(), request.quantity());
+            ReflectionTestUtils.setField(savedInventory, "id", 1L);
+            given(inventoryRepository.save(any(Inventory.class))).willReturn(savedInventory);
 
-        Long result = inventoryService.createInventory(request);
+            Long result = inventoryService.createInventory(request);
 
-        assertThat(result).isEqualTo(1L);
-        verify(inventoryRepository).save(any(Inventory.class));
+            assertThat(result).isEqualTo(1L);
+            verify(inventoryRepository).save(any(Inventory.class));
+        }
     }
 
-    @Test
-    void 재고_단건_조회_성공() {
-        Inventory inventory = Inventory.create(1L, 10);
-        given(inventoryRepository.findByProductId(1L)).willReturn(Optional.of(inventory));
+    @Nested
+    @DisplayName("getInventoryByProductId - 재고 단건 조회")
+    class GetInventoryByProductIdTest {
 
-        InventoryResponse response = inventoryService.getInventoryByProductId(1L);
+        @Test
+        void 성공() {
+            Inventory inventory = Inventory.create(1L, 10);
+            given(inventoryRepository.findByProductId(1L)).willReturn(Optional.of(inventory));
 
-        assertThat(response.productId()).isEqualTo(1L);
-        assertThat(response.quantity()).isEqualTo(10);
+            InventoryResponse response = inventoryService.getInventoryByProductId(1L);
+
+            assertThat(response.productId()).isEqualTo(1L);
+            assertThat(response.quantity()).isEqualTo(10);
+        }
+
+        @Test
+        void 실패_재고_없음() {
+            given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> inventoryService.getInventoryByProductId(1L))
+                    .isInstanceOf(InventoryNotFoundException.class);
+        }
     }
 
-    @Test
-    void 재고_단건_조회_실패_상품없음() {
-        given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
+    @Nested
+    @DisplayName("deleteInventoryByProductId - 재고 삭제")
+    class DeleteInventoryByProductIdTest {
 
-        assertThatThrownBy(() -> inventoryService.getInventoryByProductId(1L))
-                .isInstanceOf(InventoryNotFoundException.class);
+        @Test
+        void 성공() {
+            inventoryService.deleteInventoryByProductId(1L);
+
+            verify(inventoryRepository).deleteByProductId(1L);
+        }
     }
 
-    @Test
-    void 재고_삭제_성공() {
-        inventoryService.deleteInventoryByProductId(1L);
+    @Nested
+    @DisplayName("addProductInventory - 재고 수량 추가")
+    class AddProductInventoryTest {
 
-        verify(inventoryRepository).deleteByProductId(1L);
-    }
+        @Test
+        void 성공() {
+            Inventory inventory = Inventory.create(1L, 10);
+            given(inventoryRepository.findByProductId(1L)).willReturn(Optional.of(inventory));
 
-    @Test
-    void 재고_증가_성공() {
-        Inventory inventory = Inventory.create(1L, 10);
-        given(inventoryRepository.findByProductId(1L)).willReturn(Optional.of(inventory));
+            inventoryService.addProductInventory(1L, new UpdateInventoryRequest(5));
 
-        inventoryService.addProductInventory(1L, new UpdateInventoryRequest(5));
+            assertThat(inventory.getQuantity()).isEqualTo(15);
+        }
 
-        assertThat(inventory.getQuantity()).isEqualTo(15);
-    }
+        @Test
+        void 실패_재고_없음() {
+            given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
 
-    @Test
-    void 재고_증가_실패_상품없음() {
-        given(inventoryRepository.findByProductId(1L)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> inventoryService.addProductInventory(1L, new UpdateInventoryRequest(5)))
-                .isInstanceOf(InventoryNotFoundException.class);
+            assertThatThrownBy(() -> inventoryService.addProductInventory(1L, new UpdateInventoryRequest(5)))
+                    .isInstanceOf(InventoryNotFoundException.class);
+        }
     }
 }
