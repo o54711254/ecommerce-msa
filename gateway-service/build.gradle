@@ -30,7 +30,7 @@ dependencyManagement {
 
 dependencies {
     /* gateway */
-    implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc'
+    implementation 'org.springframework.cloud:spring-cloud-starter-gateway-server-webflux'
 
     /* eureka client */
     implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
