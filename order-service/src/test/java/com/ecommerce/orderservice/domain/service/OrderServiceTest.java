@@ -17,7 +17,13 @@ import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
+import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
+import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
+import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
+import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,123 +53,239 @@ class OrderServiceTest {
     @Mock private ProductClient productClient;
     @Mock private InventoryClient inventoryClient;
     @Mock private PaymentClient paymentClient;
+    @Mock private OrderEventProducer orderEventProducer;
     @InjectMocks private OrderService orderService;
 
-    @Test
-    void getOrderList_memberId로_목록_반환() {
-        Long memberId = 1L;
-        List<OrderListResponse> expected = List.of(
-                new OrderListResponse(1L, OrderStatus.PENDING, 10000L, LocalDateTime.now())
-        );
-        given(orderRepository.getOrderList(memberId)).willReturn(expected);
+    @Nested
+    @DisplayName("getOrderList - 주문 목록 조회")
+    class GetOrderListTest {
 
-        List<OrderListResponse> result = orderService.getOrderList(memberId);
+        @Test
+        void memberId로_목록_반환() {
+            Long memberId = 1L;
+            List<OrderListResponse> expected = List.of(
+                    new OrderListResponse(1L, OrderStatus.PENDING, 10000L, LocalDateTime.now())
+            );
+            given(orderRepository.getOrderList(memberId)).willReturn(expected);
 
-        assertThat(result).isEqualTo(expected);
+            List<OrderListResponse> result = orderService.getOrderList(memberId);
+
+            assertThat(result).isEqualTo(expected);
+        }
     }
 
-    @Test
-    void getOrderDetail_정상_조회() {
-        Long memberId = 1L;
-        Long orderId = 10L;
-        OrderItem orderItem = OrderItem.create(100L, 2, 5000L);
-        Order order = Order.create(memberId, List.of(orderItem));
+    @Nested
+    @DisplayName("getOrderDetail - 주문 상세 조회")
+    class GetOrderDetailTest {
 
-        given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
-        given(productClient.getNamesMap(anyList()))
-                .willReturn(ResponseEntity.ok(new ProductNameResponse(Map.of(100L, "상품A"))));
+        @Test
+        void 성공() {
+            Long memberId = 1L;
+            Long orderId = 10L;
+            OrderItem orderItem = OrderItem.create(100L, 2, 5000L);
+            Order order = Order.create(memberId, List.of(orderItem));
 
-        OrderResponse response = orderService.getOrderDetail(memberId, orderId);
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(productClient.getNamesMap(anyList()))
+                    .willReturn(ResponseEntity.ok(new ProductNameResponse(Map.of(100L, "상품A"))));
 
-        assertThat(response.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
-        assertThat(response.getTotalPrice()).isEqualTo(10000L);
-        assertThat(response.getItemList()).hasSize(1);
+            OrderResponse response = orderService.getOrderDetail(memberId, orderId);
 
-        var item = response.getItemList().get(0);
-        assertThat(item.getProductName()).isEqualTo("상품A");
-        assertThat(item.getQuantity()).isEqualTo(2);
-        assertThat(item.getItemPrice()).isEqualTo(5000L);
-        assertThat(item.getTotalPrice()).isEqualTo(10000L);
+            assertThat(response.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
+            assertThat(response.getTotalPrice()).isEqualTo(10000L);
+            assertThat(response.getItemList()).hasSize(1);
+
+            var item = response.getItemList().get(0);
+            assertThat(item.getProductName()).isEqualTo("상품A");
+            assertThat(item.getQuantity()).isEqualTo(2);
+            assertThat(item.getItemPrice()).isEqualTo(5000L);
+            assertThat(item.getTotalPrice()).isEqualTo(10000L);
+        }
+
+        @Test
+        void 실패_주문_없음() {
+            given(orderRepository.findById(any())).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> orderService.getOrderDetail(1L, 999L))
+                    .isInstanceOf(OrderNotFoundException.class);
+        }
+
+        @Test
+        void 실패_본인_주문_아님() {
+            Long memberId = 1L;
+            Long otherMemberId = 2L;
+            Order order = Order.create(memberId, List.of(OrderItem.create(100L, 1, 5000L)));
+
+            given(orderRepository.findById(10L)).willReturn(Optional.of(order));
+
+            assertThatThrownBy(() -> orderService.getOrderDetail(otherMemberId, 10L))
+                    .isInstanceOf(OrderAccessDeniedException.class)
+                    .hasMessage("본인 주문만 조회할 수 있습니다.");
+        }
     }
 
-    @Test
-    void getOrderDetail_주문이_없으면_EntityNotFoundException() {
-        given(orderRepository.findById(any())).willReturn(Optional.empty());
+    @Nested
+    @DisplayName("createOrder - 주문 생성")
+    class CreateOrderTest {
 
-        assertThatThrownBy(() -> orderService.getOrderDetail(1L, 999L))
-                .isInstanceOf(OrderNotFoundException.class);
+        @Test
+        void 성공() {
+            Long memberId = 1L;
+            CreateOrderRequest request = new CreateOrderRequest(List.of(
+                    new CreateOrderItemRequest(100L, 2),
+                    new CreateOrderItemRequest(200L, 1)
+            ));
+
+            given(productClient.getPriceMap(List.of(100L, 200L)))
+                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
+            given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
+                    .willReturn(ResponseEntity.ok().build());
+            given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
+                    .willReturn(ResponseEntity.ok(1L));
+            given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
+                Order saved = invocation.getArgument(0);
+                ReflectionTestUtils.setField(saved, "id", 1L);
+                return saved;
+            });
+
+            Long orderId = orderService.createOrder(memberId, request);
+
+            assertThat(orderId).isEqualTo(1L);
+            verify(productClient).getPriceMap(List.of(100L, 200L));
+            verify(inventoryClient).decreaseInventory(any(DecreaseProductInventoryRequest.class));
+            verify(orderRepository).save(any(Order.class));
+        }
+
+        @Test
+        void 재고_차감_요청에_올바른_상품정보가_담긴다() {
+            Long memberId = 1L;
+            CreateOrderRequest request = new CreateOrderRequest(List.of(
+                    new CreateOrderItemRequest(100L, 3),
+                    new CreateOrderItemRequest(200L, 2)
+            ));
+
+            given(productClient.getPriceMap(anyList()))
+                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L))));
+            given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
+                    .willReturn(ResponseEntity.ok().build());
+            given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
+                    .willReturn(ResponseEntity.ok(1L));
+            given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
+                Order saved = invocation.getArgument(0);
+                ReflectionTestUtils.setField(saved, "id", 1L);
+                return saved;
+            });
+
+            orderService.createOrder(memberId, request);
+
+            ArgumentCaptor<DecreaseProductInventoryRequest> captor = ArgumentCaptor.forClass(DecreaseProductInventoryRequest.class);
+            verify(inventoryClient).decreaseInventory(captor.capture());
+
+            List<OrderInfoRequest> captured = captor.getValue().orderInfoRequest();
+            assertThat(captured).hasSize(2);
+            assertThat(captured).extracting(OrderInfoRequest::productId).containsExactlyInAnyOrder(100L, 200L);
+            assertThat(captured).extracting(OrderInfoRequest::quantity).containsExactlyInAnyOrder(3, 2);
+        }
     }
 
-    @Test
-    void getOrderDetail_본인_주문이_아니면_IllegalStateException() {
-        Long memberId = 1L;
-        Long otherMemberId = 2L;
-        Order order = Order.create(memberId, List.of(OrderItem.create(100L, 1, 5000L)));
+    @Nested
+    @DisplayName("cancelOrder - 주문 취소")
+    class CancelOrderTest {
 
-        given(orderRepository.findById(10L)).willReturn(Optional.of(order));
+        @Test
+        void 성공_PENDING_상태() {
+            Long memberId = 1L;
+            Long orderId = 10L;
+            Order order = Order.create(memberId, List.of(OrderItem.create(100L, 2, 5000L)));
+            ReflectionTestUtils.setField(order, "id", orderId);
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
-        assertThatThrownBy(() -> orderService.getOrderDetail(otherMemberId, 10L))
-                .isInstanceOf(OrderAccessDeniedException.class)
-                .hasMessage("본인 주문만 조회할 수 있습니다.");
+            orderService.cancelOrder(memberId, orderId);
+
+            assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.CANCELED);
+            verify(paymentClient).cancelPayment(orderId);
+            verify(orderEventProducer).sendOrderCancelled(any(OrderCancelEvent.class));
+        }
+
+        @Test
+        void 성공_PAID_상태() {
+            Long memberId = 1L;
+            Long orderId = 10L;
+            Order order = Order.create(memberId, List.of(OrderItem.create(100L, 2, 5000L)));
+            order.updateStatus(OrderStatus.PAID);
+            ReflectionTestUtils.setField(order, "id", orderId);
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+
+            orderService.cancelOrder(memberId, orderId);
+
+            assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.REFUNDED);
+            verify(paymentClient).cancelPayment(orderId);
+            verify(orderEventProducer).sendOrderCancelled(any(OrderCancelEvent.class));
+        }
+
+        @Test
+        void 실패_주문_없음() {
+            given(orderRepository.findById(any())).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> orderService.cancelOrder(1L, 999L))
+                    .isInstanceOf(OrderNotFoundException.class);
+        }
+
+        @Test
+        void 실패_본인_주문_아님() {
+            Order order = Order.create(1L, List.of(OrderItem.create(100L, 1, 5000L)));
+            given(orderRepository.findById(10L)).willReturn(Optional.of(order));
+
+            assertThatThrownBy(() -> orderService.cancelOrder(2L, 10L))
+                    .isInstanceOf(OrderAccessDeniedException.class);
+        }
+
+        @Test
+        void 실패_취소_불가_상태() {
+            Order order = Order.create(1L, List.of(OrderItem.create(100L, 1, 5000L)));
+            order.updateStatus(OrderStatus.SHIPPED);
+            given(orderRepository.findById(10L)).willReturn(Optional.of(order));
+
+            assertThatThrownBy(() -> orderService.cancelOrder(1L, 10L))
+                    .isInstanceOf(OrderCancelNotAllowedException.class);
+        }
     }
 
-    @Test
-    void createOrder_정상_생성() {
-        Long memberId = 1L;
-        CreateOrderRequest request = new CreateOrderRequest(List.of(
-                new CreateOrderItemRequest(100L, 2),
-                new CreateOrderItemRequest(200L, 1)
-        ));
+    @Nested
+    @DisplayName("updateOrderStatus - 주문 상태 변경")
+    class UpdateOrderStatusTest {
 
-        given(productClient.getPriceMap(List.of(100L, 200L)))
-                .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
-        given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
-                .willReturn(ResponseEntity.ok().build());
-        given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
-                .willReturn(ResponseEntity.ok(1L));
+        @Test
+        void 성공() {
+            Long orderId = 10L;
+            Order order = Order.create(1L, List.of(OrderItem.create(100L, 1, 5000L)));
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
-        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
-            Order saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "id", 1L);
-            return saved;
-        });
+            orderService.updateOrderStatus(orderId, OrderStatus.PAID);
 
-        Long orderId = orderService.createOrder(memberId, request);
-
-        assertThat(orderId).isEqualTo(1L);
-        verify(productClient).getPriceMap(List.of(100L, 200L));
-        verify(inventoryClient).decreaseInventory(any(DecreaseProductInventoryRequest.class));
-        verify(orderRepository).save(any(Order.class));
+            assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PAID);
+        }
     }
 
-    @Test
-    void createOrder_재고차감_요청에_올바른_상품정보가_담긴다() {
-        Long memberId = 1L;
-        CreateOrderRequest request = new CreateOrderRequest(List.of(
-                new CreateOrderItemRequest(100L, 3),
-                new CreateOrderItemRequest(200L, 2)
-        ));
+    @Nested
+    @DisplayName("orderFailed - 주문 실패 처리")
+    class OrderFailedTest {
 
-        given(productClient.getPriceMap(anyList()))
-                .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L))));
-        given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
-                .willReturn(ResponseEntity.ok().build());
-        given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
-                .willReturn(ResponseEntity.ok(1L));
-        given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
-            Order saved = invocation.getArgument(0);
-            ReflectionTestUtils.setField(saved, "id", 1L);
-            return saved;
-        });
+        @Test
+        void 성공() {
+            Long orderId = 10L;
+            Order order = Order.create(1L, List.of(
+                    OrderItem.create(100L, 2, 5000L),
+                    OrderItem.create(200L, 1, 3000L)
+            ));
+            given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
-        orderService.createOrder(memberId, request);
+            orderService.orderFailed(orderId);
 
-        ArgumentCaptor<DecreaseProductInventoryRequest> captor = ArgumentCaptor.forClass(DecreaseProductInventoryRequest.class);
-        verify(inventoryClient).decreaseInventory(captor.capture());
-
-        List<OrderInfoRequest> captured = captor.getValue().orderInfoRequest();
-        assertThat(captured).hasSize(2);
-        assertThat(captured).extracting(OrderInfoRequest::productId).containsExactlyInAnyOrder(100L, 200L);
-        assertThat(captured).extracting(OrderInfoRequest::quantity).containsExactlyInAnyOrder(3, 2);
+            ArgumentCaptor<OrderFailedEvent> captor = ArgumentCaptor.forClass(OrderFailedEvent.class);
+            verify(orderEventProducer).sendOrderFailed(captor.capture());
+            assertThat(captor.getValue().orderId()).isEqualTo(orderId);
+            assertThat(captor.getValue().itemInfoList()).hasSize(2);
+        }
     }
 }
