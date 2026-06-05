@@ -23,8 +23,7 @@ public class InventoryClientFallbackFactory implements FallbackFactory<Inventory
 
             @Override
             public ResponseEntity<InventoryResponse> getInventory(Long productId) {
-                log.warn("inventory-service 불가 - 재고 정보 없이 응답");
-                return ResponseEntity.ok(new InventoryResponse(productId, null));
+                throw new ExternalServiceException("inventory-service", cause);
             }
 
             @Override

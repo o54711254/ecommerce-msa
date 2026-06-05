@@ -1,6 +1,7 @@
 package com.ecommerce.productservice.domain.service;
 
 import com.ecommerce.productservice.client.inventory.InventoryClient;
+import com.ecommerce.productservice.client.inventory.InventoryClientHelper;
 import com.ecommerce.productservice.client.inventory.dto.req.CreateInventoryRequest;
 import com.ecommerce.productservice.client.inventory.dto.res.InventoryResponse;
 import com.ecommerce.productservice.client.member.MemberClient;
@@ -16,7 +17,6 @@ import com.ecommerce.productservice.domain.repository.ProductRepository;
 import com.ecommerce.productservice.global.exception.custom.ForbiddenException;
 import com.ecommerce.productservice.global.exception.custom.ProductAccessDeniedException;
 import com.ecommerce.productservice.global.exception.custom.ProductNotFoundException;
-import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,9 +31,9 @@ public class ProductService {
 
     private final ProductRepository productRepository;
     private final InventoryClient inventoryClient;
+    private final InventoryClientHelper inventoryClientHelper;
     private final MemberClient memberClient;
 
-    @Retry(name = "inventory-service")
     @Transactional
     public Long createProduct(Long sellerId, String role, CreateProductRequest request) {
         if (!role.equals("SELLER")) {
@@ -48,12 +48,11 @@ public class ProductService {
         return productId;
     }
 
-    @Retry(name = "inventory-service")
     @Transactional(readOnly = true)
     public ProductDetailResponse getProductDetail(Long id) {
         Product product = getProduct(id);
 
-        InventoryResponse inventory = inventoryClient.getInventory(product.getId()).getBody();
+        InventoryResponse inventory = inventoryClientHelper.getInventory(product.getId());
         SellerResponse seller = memberClient.getSeller(product.getSellerId()).getBody();
 
         return ProductDetailResponse.builder()
@@ -94,7 +93,6 @@ public class ProductService {
         return product.getId();
     }
 
-    @Retry(name = "inventory-service")
     @Transactional
     public void deleteProduct(Long id, Long sellerId) {
         Product product = getProduct(id);
