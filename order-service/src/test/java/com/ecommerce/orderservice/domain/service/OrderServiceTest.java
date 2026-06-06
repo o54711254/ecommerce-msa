@@ -243,7 +243,7 @@ class OrderServiceTest {
         @Test
         void 실패_취소_불가_상태() {
             Order order = Order.create(1L, List.of(OrderItem.create(100L, 1, 5000L)));
-            order.updateStatus(OrderStatus.SHIPPED);
+            order.updateStatus(OrderStatus.FAILED);
             given(orderRepository.findById(10L)).willReturn(Optional.of(order));
 
             assertThatThrownBy(() -> orderService.cancelOrder(1L, 10L))
