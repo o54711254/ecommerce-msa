@@ -20,8 +20,8 @@ public class Member extends BaseEntity {
     @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(nullable = false)
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private Role role;
 
     @Column(nullable = false)

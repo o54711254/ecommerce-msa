@@ -21,7 +21,7 @@ public class Order extends BaseEntity {
     private Long memberId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private OrderStatus orderStatus;
 
     @Column(nullable = false)

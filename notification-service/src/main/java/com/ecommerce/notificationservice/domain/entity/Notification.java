@@ -23,7 +23,7 @@ public class Notification extends BaseEntity {
     private Long memberId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private NotificationType type;
 
     @Column(nullable = true)

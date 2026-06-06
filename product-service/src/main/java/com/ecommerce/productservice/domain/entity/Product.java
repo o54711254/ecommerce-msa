@@ -28,6 +28,7 @@ public class Product extends BaseEntity {
     private Long price;
 
     @Enumerated(EnumType.STRING)
+    @Column(columnDefinition = "varchar(20)")
     private ProductStatus status;
 
     private Product(Long sellerId, String name, String description, Long price) {
