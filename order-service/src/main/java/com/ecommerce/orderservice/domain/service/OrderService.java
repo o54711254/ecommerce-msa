@@ -102,7 +102,7 @@ public class OrderService {
         List<OrderItemInfo> itemInfoList = order.getOrderItems().stream()
                 .map(item -> new OrderItemInfo(item.getProductId(), item.getQuantity()))
                 .toList();
-        orderEventProducer.sendOrderCancelled(new OrderCancelEvent(order.getId(), itemInfoList));
+        orderEventProducer.sendOrderCancelled(new OrderCancelEvent(memberId, order.getId(), itemInfoList));
     }
 
     @Transactional

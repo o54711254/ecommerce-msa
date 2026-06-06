@@ -46,7 +46,7 @@ public class PaymentService {
             case "SUCCESS" -> {
                 payment.updatePaymentStatus(PaymentStatus.SUCCESS);
                 paymentEventProducer.sendPaymentSuccess(
-                        new PaymentSuccessEvent(payment.getOrderId(), payment.getMemberId(), payment.getAmount())
+                        new PaymentSuccessEvent(payment.getOrderId(), payment.getMemberId(), payment.getId(), payment.getAmount())
                 );
             }
             case "FAILED" -> {

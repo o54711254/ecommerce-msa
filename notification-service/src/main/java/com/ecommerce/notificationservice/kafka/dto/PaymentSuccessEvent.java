@@ -1,4 +1,4 @@
-package com.ecommerce.paymentservice.kafka.dto;
+package com.ecommerce.notificationservice.kafka.dto;
 
 public record PaymentSuccessEvent(
         Long orderId,

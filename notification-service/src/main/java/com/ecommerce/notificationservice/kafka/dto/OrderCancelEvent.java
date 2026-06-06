@@ -1,4 +1,4 @@
-package com.ecommerce.inventoryservice.kafka.dto;
+package com.ecommerce.notificationservice.kafka.dto;
 
 import java.util.List;
 
