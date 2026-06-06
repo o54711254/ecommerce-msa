@@ -4,8 +4,10 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -35,4 +37,7 @@ public class Notification extends BaseEntity {
     @Column(name = "is_read", nullable = false)
     private boolean isRead;
 
+    public void read(){
+        this.isRead = true;
+    }
 }
