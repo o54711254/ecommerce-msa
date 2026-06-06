@@ -2,10 +2,13 @@ package com.ecommerce.paymentservice.domain.controller;
 
 import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
 import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
+import com.ecommerce.paymentservice.domain.dto.res.PaymentResponse;
 import com.ecommerce.paymentservice.domain.service.PaymentService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RequestMapping("/api/v1/payment")
 @RequiredArgsConstructor
@@ -15,13 +18,14 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @GetMapping
-    public ResponseEntity<?> getPaymentList(@RequestHeader("X-Member-Id") Long memberId) {
-        return ResponseEntity.ok().build();
+    public ResponseEntity<List<PaymentResponse>> getPaymentList(@RequestHeader("X-Member-Id") Long memberId) {
+        return ResponseEntity.ok(paymentService.getPaymentList(memberId));
     }
 
-    @GetMapping("/id")
-    public ResponseEntity<?> getPaymentDetail() {
-        return ResponseEntity.ok().build();
+    @GetMapping("/{paymentId}")
+    public ResponseEntity<PaymentResponse> getPaymentDetail(@RequestHeader("X-Member-Id") Long memberId,
+                                                            @PathVariable Long paymentId) {
+        return ResponseEntity.ok(paymentService.getPaymentDetail(memberId, paymentId));
     }
 
     @PostMapping

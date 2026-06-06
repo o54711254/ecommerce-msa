@@ -10,6 +10,7 @@ public enum ErrorCode {
 
     PAYMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "결제건을 찾을 수 없습니다."),
     PAYMENT_CANCEL_NOT_ALLOWED(HttpStatus.BAD_REQUEST, "취소할 수 없는 결제 상태입니다."),
+    PAYMENT_ACCESS_DENIED(HttpStatus.FORBIDDEN, "결제 조회 권한이 없습니다."),
 
     EXTERNAL_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "외부 서비스를 사용할 수 없습니다."),
     INVALID_INPUT(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),

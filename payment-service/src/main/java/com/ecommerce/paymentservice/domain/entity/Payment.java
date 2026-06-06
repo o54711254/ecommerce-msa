@@ -25,6 +25,7 @@ public class Payment extends BaseEntity {
     private Long amount;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(20)")
     private PaymentStatus paymentStatus;
 
     private Payment(Long memberId, Long orderId, Long amount) {

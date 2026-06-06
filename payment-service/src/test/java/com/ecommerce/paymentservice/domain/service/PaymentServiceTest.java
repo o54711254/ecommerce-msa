@@ -2,9 +2,11 @@ package com.ecommerce.paymentservice.domain.service;
 
 import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
 import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
+import com.ecommerce.paymentservice.domain.dto.res.PaymentResponse;
 import com.ecommerce.paymentservice.domain.entity.Payment;
 import com.ecommerce.paymentservice.domain.entity.PaymentStatus;
 import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
+import com.ecommerce.paymentservice.global.exception.custom.PaymentAccessDeniedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
@@ -20,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +38,69 @@ class PaymentServiceTest {
     @Mock private PaymentRepository paymentRepository;
     @Mock private PaymentEventProducer paymentEventProducer;
     @InjectMocks private PaymentService paymentService;
+
+    @Nested
+    @DisplayName("getPaymentList - 결제 목록 조회")
+    class GetPaymentListTest {
+
+        @Test
+        void 성공() {
+            Payment p1 = Payment.create(1L, 10L, 30000L);
+            Payment p2 = Payment.create(1L, 11L, 50000L);
+            given(paymentRepository.findAllByMemberId(1L)).willReturn(List.of(p1, p2));
+
+            List<PaymentResponse> result = paymentService.getPaymentList(1L);
+
+            assertThat(result).hasSize(2);
+            assertThat(result.get(0).orderId()).isEqualTo(10L);
+            assertThat(result.get(1).orderId()).isEqualTo(11L);
+        }
+
+        @Test
+        void 성공_결제내역_없음() {
+            given(paymentRepository.findAllByMemberId(1L)).willReturn(List.of());
+
+            List<PaymentResponse> result = paymentService.getPaymentList(1L);
+
+            assertThat(result).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("getPaymentDetail - 결제 상세 조회")
+    class GetPaymentDetailTest {
+
+        @Test
+        void 성공() {
+            Payment payment = Payment.create(1L, 10L, 50000L);
+            ReflectionTestUtils.setField(payment, "id", 1L);
+            given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+
+            PaymentResponse result = paymentService.getPaymentDetail(1L, 1L);
+
+            assertThat(result.paymentId()).isEqualTo(1L);
+            assertThat(result.orderId()).isEqualTo(10L);
+            assertThat(result.amount()).isEqualTo(50000L);
+        }
+
+        @Test
+        void 실패_결제_없음() {
+            given(paymentRepository.findById(any())).willReturn(Optional.empty());
+
+            assertThatThrownBy(() -> paymentService.getPaymentDetail(1L, 999L))
+                    .isInstanceOf(PaymentNotFoundException.class);
+        }
+
+        @Test
+        void 실패_본인_결제_아님() {
+            Payment payment = Payment.create(1L, 10L, 50000L);
+            ReflectionTestUtils.setField(payment, "id", 1L);
+            given(paymentRepository.findById(1L)).willReturn(Optional.of(payment));
+
+            assertThatThrownBy(() -> paymentService.getPaymentDetail(2L, 1L))
+                    .isInstanceOf(PaymentAccessDeniedException.class);
+        }
+    }
 
     @Nested
     @DisplayName("createPayment - 결제 생성")

@@ -2,9 +2,11 @@ package com.ecommerce.paymentservice.domain.service;
 
 import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
 import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
+import com.ecommerce.paymentservice.domain.dto.res.PaymentResponse;
 import com.ecommerce.paymentservice.domain.entity.Payment;
 import com.ecommerce.paymentservice.domain.entity.PaymentStatus;
 import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
+import com.ecommerce.paymentservice.global.exception.custom.PaymentAccessDeniedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
@@ -14,12 +16,30 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentEventProducer paymentEventProducer;
+
+    @Transactional(readOnly = true)
+    public List<PaymentResponse> getPaymentList(Long memberId) {
+        return paymentRepository.findAllByMemberId(memberId).stream()
+                .map(PaymentResponse::from)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentResponse getPaymentDetail(Long memberId, Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId).orElseThrow(PaymentNotFoundException::new);
+        if (!payment.getMemberId().equals(memberId)) {
+            throw new PaymentAccessDeniedException();
+        }
+        return PaymentResponse.from(payment);
+    }
 
     @Transactional
     public Long createPayment(Long memberId, CreatePaymentRequest request) {
