@@ -23,7 +23,7 @@ public class PaymentEventConsumer {
     public void handlePaymentSuccess(String rawJson) {
         try {
             PaymentSuccessEvent event = objectMapper.readValue(rawJson, PaymentSuccessEvent.class);
-            log.info("payment.success consumed: orderId={}", event.orderId());
+            log.info("[payment.success] consumed: orderId={}", event.orderId());
             orderService.updateOrderStatus(event.orderId(), OrderStatus.PAID);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -34,7 +34,7 @@ public class PaymentEventConsumer {
     public void handlePaymentFailed(String rawJson) {
         try {
             PaymentFailedEvent event = objectMapper.readValue(rawJson, PaymentFailedEvent.class);
-            log.info("payment.failed consumed: orderId={}", event.orderId());
+            log.info("[payment.failed] consumed: orderId={}", event.orderId());
             orderService.updateOrderStatus(event.orderId(), OrderStatus.FAILED);
             orderService.orderFailed(event.orderId());
         } catch (JsonProcessingException e) {

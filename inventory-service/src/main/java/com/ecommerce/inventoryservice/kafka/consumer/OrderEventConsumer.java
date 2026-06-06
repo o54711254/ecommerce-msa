@@ -22,7 +22,7 @@ public class OrderEventConsumer {
     public void handleOrderFailed(String rawJson) {
         try {
             OrderFailedEvent event = objectMapper.readValue(rawJson, OrderFailedEvent.class);
-            log.info("order.failed consumed: orderId={}", event.orderId());
+            log.info("[order.failed] consumed: orderId={}", event.orderId());
             inventoryService.increaseProductInventory(event.itemInfoList());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -33,7 +33,7 @@ public class OrderEventConsumer {
     public void handleOrderCancelled(String rawJson) {
         try {
             OrderCancelEvent event = objectMapper.readValue(rawJson, OrderCancelEvent.class);
-            log.info("order.cancelled consumed: orderId={}", event.orderId());
+            log.info("[order.cancelled] consumed: orderId={}", event.orderId());
             inventoryService.increaseProductInventory(event.itemInfoList());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
