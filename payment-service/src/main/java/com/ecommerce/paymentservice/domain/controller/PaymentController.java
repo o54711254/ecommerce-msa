@@ -34,7 +34,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.createPayment(memberId, request));
     }
 
-    @PatchMapping("/{orderId}/cancel")
+    @PostMapping("/{orderId}/cancel")
     public ResponseEntity<Void> cancelPayment(@PathVariable Long orderId) {
         paymentService.cancelPaymentByOrderId(orderId);
         return ResponseEntity.ok().build();
