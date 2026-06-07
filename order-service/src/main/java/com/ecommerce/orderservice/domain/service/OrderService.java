@@ -1,8 +1,5 @@
 package com.ecommerce.orderservice.domain.service;
 
-import com.ecommerce.orderservice.client.inventory.InventoryClient;
-import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryRequest;
-import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
 import com.ecommerce.orderservice.client.payment.PaymentClient;
 import com.ecommerce.orderservice.client.payment.dto.req.CreatePaymentRequest;
 import com.ecommerce.orderservice.client.product.ProductClient;
@@ -19,6 +16,7 @@ import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedExcep
 import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
+import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderItemInfo;
 import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
@@ -35,7 +33,6 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductClient productClient;
-    private final InventoryClient inventoryClient;
     private final PaymentClient paymentClient;
     private final OrderEventProducer orderEventProducer;
 
@@ -111,13 +108,14 @@ public class OrderService {
         order.updateStatus(orderStatus);
     }
 
-    @Transactional(readOnly = true)
-    public void orderFailed(Long orderId) {
+    @Transactional
+    public void handlePaymentFailed(Long orderId) {
         Order order = getOrder(orderId);
+        order.updateStatus(OrderStatus.FAILED);
+
         List<OrderItemInfo> itemInfoList = order.getOrderItems().stream()
                 .map(item -> new OrderItemInfo(item.getProductId(), item.getQuantity()))
                 .toList();
-
         orderEventProducer.sendOrderFailed(new OrderFailedEvent(orderId, itemInfoList));
     }
 
@@ -133,11 +131,6 @@ public class OrderService {
         // 가격 조회
         Map<Long, Long> priceMap = productClient.getPriceMap(productIds).getBody().priceMap();
 
-        // 재고 차감
-        List<OrderInfoRequest> orderInfoRequests = items.stream()
-                .map(item -> new OrderInfoRequest(item.productId(), item.quantity()))
-                .toList();
-        inventoryClient.decreaseInventory(new DecreaseProductInventoryRequest(orderInfoRequests));
 
         List<OrderItem> orderItems = items.stream()
                 .map(item -> OrderItem.create(item.productId(), item.quantity(), priceMap.get(item.productId())))
@@ -146,8 +139,11 @@ public class OrderService {
         Order order = Order.create(memberId, orderItems);
         orderRepository.save(order);
 
-        // 결제 생성
-        paymentClient.createPayment(memberId, new CreatePaymentRequest(order.getId(), order.getTotalPrice()));
+        List<OrderItemInfo> itemInfoList = items.stream()
+                .map(item -> new OrderItemInfo(item.productId(), item.quantity()))
+                .toList();
+
+        orderEventProducer.sendOrderCreated(new OrderCreateEvent(memberId, order.getId(), order.getTotalPrice(), itemInfoList));
 
         return order.getId();
     }

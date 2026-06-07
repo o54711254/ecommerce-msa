@@ -35,8 +35,7 @@ public class PaymentEventConsumer {
         try {
             PaymentFailedEvent event = objectMapper.readValue(rawJson, PaymentFailedEvent.class);
             log.info("[payment.failed] consumed: orderId={}", event.orderId());
-            orderService.updateOrderStatus(event.orderId(), OrderStatus.FAILED);
-            orderService.orderFailed(event.orderId());
+            orderService.handlePaymentFailed(event.orderId());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

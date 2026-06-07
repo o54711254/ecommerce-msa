@@ -1,10 +1,6 @@
 package com.ecommerce.orderservice.domain.service;
 
-import com.ecommerce.orderservice.client.inventory.InventoryClient;
-import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryRequest;
-import com.ecommerce.orderservice.client.inventory.dto.OrderInfoRequest;
 import com.ecommerce.orderservice.client.payment.PaymentClient;
-import com.ecommerce.orderservice.client.payment.dto.req.CreatePaymentRequest;
 import com.ecommerce.orderservice.client.product.ProductClient;
 import com.ecommerce.orderservice.client.product.dto.ProductNameResponse;
 import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
@@ -20,6 +16,7 @@ import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedExcep
 import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
+import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
 import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +39,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
@@ -51,7 +47,6 @@ class OrderServiceTest {
 
     @Mock private OrderRepository orderRepository;
     @Mock private ProductClient productClient;
-    @Mock private InventoryClient inventoryClient;
     @Mock private PaymentClient paymentClient;
     @Mock private OrderEventProducer orderEventProducer;
     @InjectMocks private OrderService orderService;
@@ -138,10 +133,6 @@ class OrderServiceTest {
 
             given(productClient.getPriceMap(List.of(100L, 200L)))
                     .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
-            given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
-                    .willReturn(ResponseEntity.ok().build());
-            given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
-                    .willReturn(ResponseEntity.ok(1L));
             given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
                 Order saved = invocation.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", 1L);
@@ -152,12 +143,12 @@ class OrderServiceTest {
 
             assertThat(orderId).isEqualTo(1L);
             verify(productClient).getPriceMap(List.of(100L, 200L));
-            verify(inventoryClient).decreaseInventory(any(DecreaseProductInventoryRequest.class));
             verify(orderRepository).save(any(Order.class));
+            verify(orderEventProducer).sendOrderCreated(any(OrderCreateEvent.class));
         }
 
         @Test
-        void 재고_차감_요청에_올바른_상품정보가_담긴다() {
+        void order_created_이벤트에_올바른_상품정보가_담긴다() {
             Long memberId = 1L;
             CreateOrderRequest request = new CreateOrderRequest(List.of(
                     new CreateOrderItemRequest(100L, 3),
@@ -166,10 +157,6 @@ class OrderServiceTest {
 
             given(productClient.getPriceMap(anyList()))
                     .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L))));
-            given(inventoryClient.decreaseInventory(any(DecreaseProductInventoryRequest.class)))
-                    .willReturn(ResponseEntity.ok().build());
-            given(paymentClient.createPayment(anyLong(), any(CreatePaymentRequest.class)))
-                    .willReturn(ResponseEntity.ok(1L));
             given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
                 Order saved = invocation.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", 1L);
@@ -178,13 +165,15 @@ class OrderServiceTest {
 
             orderService.createOrder(memberId, request);
 
-            ArgumentCaptor<DecreaseProductInventoryRequest> captor = ArgumentCaptor.forClass(DecreaseProductInventoryRequest.class);
-            verify(inventoryClient).decreaseInventory(captor.capture());
+            ArgumentCaptor<OrderCreateEvent> captor = ArgumentCaptor.forClass(OrderCreateEvent.class);
+            verify(orderEventProducer).sendOrderCreated(captor.capture());
 
-            List<OrderInfoRequest> captured = captor.getValue().orderInfoRequest();
-            assertThat(captured).hasSize(2);
-            assertThat(captured).extracting(OrderInfoRequest::productId).containsExactlyInAnyOrder(100L, 200L);
-            assertThat(captured).extracting(OrderInfoRequest::quantity).containsExactlyInAnyOrder(3, 2);
+            OrderCreateEvent event = captor.getValue();
+            assertThat(event.memberId()).isEqualTo(memberId);
+            assertThat(event.amount()).isEqualTo(7000L); // 1000*3 + 2000*2
+            assertThat(event.itemInfoList()).hasSize(2);
+            assertThat(event.itemInfoList()).extracting("productId").containsExactlyInAnyOrder(100L, 200L);
+            assertThat(event.itemInfoList()).extracting("quantity").containsExactlyInAnyOrder(3, 2);
         }
     }
 
@@ -268,11 +257,11 @@ class OrderServiceTest {
     }
 
     @Nested
-    @DisplayName("orderFailed - 주문 실패 처리")
-    class OrderFailedTest {
+    @DisplayName("handlePaymentFailed - 결제 실패 처리")
+    class HandlePaymentFailedTest {
 
         @Test
-        void 성공() {
+        void 성공_주문_FAILED_상태_변경_및_이벤트_발행() {
             Long orderId = 10L;
             Order order = Order.create(1L, List.of(
                     OrderItem.create(100L, 2, 5000L),
@@ -280,7 +269,9 @@ class OrderServiceTest {
             ));
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
-            orderService.orderFailed(orderId);
+            orderService.handlePaymentFailed(orderId);
+
+            assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.FAILED);
 
             ArgumentCaptor<OrderFailedEvent> captor = ArgumentCaptor.forClass(OrderFailedEvent.class);
             verify(orderEventProducer).sendOrderFailed(captor.capture());

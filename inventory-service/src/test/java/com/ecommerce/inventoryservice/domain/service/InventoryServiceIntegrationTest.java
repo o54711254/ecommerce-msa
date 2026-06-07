@@ -5,7 +5,9 @@ import com.ecommerce.inventoryservice.domain.dto.req.DecreaseProductInventoryReq
 import com.ecommerce.inventoryservice.domain.dto.req.OrderInfoRequest;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
+import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InsufficientStockException;
+import com.ecommerce.inventoryservice.kafka.dto.OrderItemInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -26,10 +28,12 @@ class InventoryServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired private InventoryService inventoryService;
     @Autowired private InventoryRepository inventoryRepository;
+    @Autowired private ProcessedEventRepository processedEventRepository;
 
     @BeforeEach
     void setUp() {
         inventoryRepository.deleteAll();
+        processedEventRepository.deleteAll();
     }
 
     @Nested
@@ -85,6 +89,44 @@ class InventoryServiceIntegrationTest extends AbstractIntegrationTest {
             assertThat(successCount.get()).isEqualTo(1);
             assertThat(failCount.get()).isEqualTo(1);
             assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("decreaseProductInventoryIdempotent - 멱등 재고 차감")
+    class DecreaseProductInventoryIdempotentTest {
+
+        @Test
+        void 같은_orderId로_두_번_호출시_한_번만_차감() {
+            inventoryRepository.save(Inventory.create(1L, 10));
+            Long orderId = 100L;
+            DecreaseProductInventoryRequest request = new DecreaseProductInventoryRequest(
+                    List.of(new OrderInfoRequest(1L, 3))
+            );
+
+            inventoryService.decreaseProductInventoryIdempotent(orderId, request);
+            inventoryService.decreaseProductInventoryIdempotent(orderId, request); // 중복 호출
+
+            assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(7);
+            assertThat(processedEventRepository.count()).isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("increaseProductInventoryIdempotent - 멱등 재고 복구")
+    class IncreaseProductInventoryIdempotentTest {
+
+        @Test
+        void 같은_orderId로_두_번_호출시_한_번만_복구() {
+            inventoryRepository.save(Inventory.create(1L, 5));
+            Long orderId = 200L;
+            List<OrderItemInfo> items = List.of(new OrderItemInfo(1L, 3));
+
+            inventoryService.increaseProductInventoryIdempotent(orderId, items);
+            inventoryService.increaseProductInventoryIdempotent(orderId, items); // 중복 호출
+
+            assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
+            assertThat(processedEventRepository.count()).isEqualTo(1);
         }
     }
 }

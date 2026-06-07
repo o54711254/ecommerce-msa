@@ -5,6 +5,7 @@ import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
+import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -27,6 +28,7 @@ import static org.mockito.Mockito.verify;
 class InventoryServiceTest {
 
     @Mock private InventoryRepository inventoryRepository;
+    @Mock private ProcessedEventRepository processedEventRepository;
     @InjectMocks private InventoryService inventoryService;
 
     @Nested

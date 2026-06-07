@@ -14,6 +14,13 @@ import org.springframework.util.backoff.FixedBackOff;
 public class KafkaConfig {
 
     @Bean
+    public NewTopic orderCreatedTopic() {
+        return TopicBuilder.name("order.created")
+                .partitions(3)
+                .build();
+    }
+
+    @Bean
     public NewTopic orderFailedTopic() {
         return TopicBuilder.name("order.failed")
                 .partitions(3)

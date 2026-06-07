@@ -1,7 +1,6 @@
 package com.ecommerce.orderservice.domain.service;
 
 import com.ecommerce.orderservice.AbstractIntegrationTest;
-import com.ecommerce.orderservice.client.inventory.InventoryClient;
 import com.ecommerce.orderservice.client.payment.PaymentClient;
 import com.ecommerce.orderservice.client.product.ProductClient;
 import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
@@ -13,6 +12,7 @@ import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderItemRepository;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
+import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
 import com.ecommerce.orderservice.kafka.producer.OrderEventProducer;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,8 +21,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.List;
 import java.util.Map;
@@ -39,7 +39,6 @@ class OrderServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired private OrderItemRepository orderItemRepository;
 
     @MockitoBean private ProductClient productClient;
-    @MockitoBean private InventoryClient inventoryClient;
     @MockitoBean private PaymentClient paymentClient;
     @MockitoBean private OrderEventProducer orderEventProducer;
 
@@ -68,10 +67,29 @@ class OrderServiceIntegrationTest extends AbstractIntegrationTest {
             Order saved = orderRepository.findById(orderId).orElseThrow();
             assertThat(saved.getMemberId()).isEqualTo(memberId);
             assertThat(saved.getOrderStatus()).isEqualTo(OrderStatus.PENDING);
-            assertThat(saved.getTotalPrice()).isEqualTo(13000L); // 5000*2 + 3000*1
+            assertThat(saved.getTotalPrice()).isEqualTo(13000L);
             assertThat(orderItemRepository.count()).isEqualTo(2);
         }
 
+        @Test
+        void 성공_order_created_이벤트_발행() {
+            Long memberId = 1L;
+            CreateOrderRequest request = new CreateOrderRequest(List.of(
+                    new CreateOrderItemRequest(100L, 2),
+                    new CreateOrderItemRequest(200L, 1)
+            ));
+            given(productClient.getPriceMap(anyList()))
+                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
+
+            Long orderId = orderService.createOrder(memberId, request);
+
+            ArgumentCaptor<OrderCreateEvent> captor = ArgumentCaptor.forClass(OrderCreateEvent.class);
+            verify(orderEventProducer).sendOrderCreated(captor.capture());
+            assertThat(captor.getValue().orderId()).isEqualTo(orderId);
+            assertThat(captor.getValue().memberId()).isEqualTo(memberId);
+            assertThat(captor.getValue().amount()).isEqualTo(13000L);
+            assertThat(captor.getValue().itemInfoList()).hasSize(2);
+        }
     }
 
     @Nested
@@ -117,17 +135,20 @@ class OrderServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Nested
-    @DisplayName("orderFailed - 주문 실패 처리")
-    class OrderFailedTest {
+    @DisplayName("handlePaymentFailed - 결제 실패 처리")
+    class HandlePaymentFailedTest {
 
         @Test
-        void 성공_Kafka_이벤트_발행() {
+        void 성공_주문_FAILED_상태_변경_및_이벤트_발행() {
             Order order = orderRepository.save(Order.create(1L, List.of(
                     OrderItem.create(100L, 2, 5000L),
                     OrderItem.create(200L, 1, 3000L)
             )));
 
-            orderService.orderFailed(order.getId());
+            orderService.handlePaymentFailed(order.getId());
+
+            Order updated = orderRepository.findById(order.getId()).orElseThrow();
+            assertThat(updated.getOrderStatus()).isEqualTo(OrderStatus.FAILED);
 
             ArgumentCaptor<OrderFailedEvent> captor = ArgumentCaptor.forClass(OrderFailedEvent.class);
             verify(orderEventProducer).sendOrderFailed(captor.capture());
