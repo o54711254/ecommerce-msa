@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            # /api/v1/member/** 경로로 들어오는 요청을 member-service로 라우팅
+            # lb:// = Eureka에 등록된 서비스 이름으로 로드밸런싱
+            - id: member-service
+              uri: lb://member-service
+              predicates:
+                - Path=/api/v1/member/**
+            - id: product-service
+              uri: lb://product-service
+              predicates:
+                - Path=/api/v1/product/**
+            - id: inventory-service
+              uri: lb://inventory-service
+              predicates:
+                - Path=/api/v1/inventory/**
+            - id: order-service
+              uri: lb://order-service
+              predicates:
+                - Path=/api/v1/order/**
+            - id: payment-service
+              uri: lb://payment-service
+              predicates:
+                - Path=/api/v1/payment/**
+            - id: notification-service
+              uri: lb://notification-service
+              predicates:
+                - Path=/api/v1/notification/**
+
+# Eureka 서버 주소 - 서비스 디스커버리로 lb:// 라우팅 가능
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+# JWT 서명 검증용 시크릿 키 - member-service와 동일한 값이어야 함
+jwt:
+  secret: 'asdklfasljdghjldcnkljavnjkfdncvkjbwaekjfbasjhbvkjbaxkjcbhvkljawebfkjbcahvbkaerbwkjbaksjxckjvnadxccvkasdkjvbawekhbkahwebvxcnvksda'

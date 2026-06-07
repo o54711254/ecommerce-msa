@@ -1,0 +1,75 @@
+server:
+  port: 8084
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: order-service
+  datasource:
+    url: jdbc:mysql://localhost:3308/ecommerce?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ecommerce
+    password: ecommerce
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+    consumer:
+      group-id: orderGroup
+      # byte -> Java로 역직렬화
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventory-service:  # Fegin client 이름 "inventory-service"에 자동 매핑
+        sliding-window-type: COUNT_BASED  # 시간이 아니라 '횟수'기준으로 실패율 계산
+        sliding-window-size: 10           # 최근 10번 호출을 샘플로 씀
+        failure-rate-threshold: 50        # 10번중 5번 이상 실패 -> 서킷 OPEN
+        wait-duration-in-open-state: 5s   # OPEN 상태 5초 유지 후 HALF_OPEN
+        permitted-number-of-calls-in-half-open-state: 3 # HALF_OPEN에서 테스트 호출 3번
+      product-service:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+      payment-service:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 5s
+        permitted-number-of-calls-in-half-open-state: 3
+
+  retry:
+    instances:
+      inventory-service:      # Retry 빈이 "inventory-service"라는 이름으로 등록
+        max-attempts: 2       # 최초 1번 + 재시도 1번, 총 2번
+        wait-duration: 100ms  # 재시도 사이 100ms 대기
+        retry-exceptions:     # 이 예외가 발생했을떄 재시도
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException
+      product-service:
+        max-attempts: 2
+        wait-duration: 100ms
+        retry-exceptions:
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException

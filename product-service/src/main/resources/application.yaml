@@ -1,0 +1,68 @@
+server:
+  port: 8082
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka
+
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: jdbc:mysql://localhost:3308/ecommerce?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: ecommerce
+    password: ecommerce
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
+
+resilience4j:
+  circuitbreaker:
+    # 설정 그룹(instances) 정의
+    instances:
+      inventory-service:
+        sliding-window-type: COUNT_BASED # 1. 최근 호출 '횟수' 기반으로 실패율 계산
+        sliding-window-size: 10          # 2. 최근 10번의 호출을 샘플링
+        failure-rate-threshold: 50       # 3. 그 중 50% (5번) 이상 실패하면 서킷 OPEN
+
+        # --- OPEN 상태에서의 동작 ---
+        wait-duration-in-open-state: 5s  # 4. OPEN 상태를 5초간 유지. 이후 HALF_OPEN
+
+        # --- HALF_OPEN 상태에서의 동작 ---
+        permitted-number-of-calls-in-half-open-state: 3 # 5. 3번의 테스트 호출 허용
+
+      member-service:
+        sliding-window-type: COUNT_BASED # 1. 최근 호출 '횟수' 기반으로 실패율 계산
+        sliding-window-size: 10          # 2. 최근 10번의 호출을 샘플링
+        failure-rate-threshold: 50       # 3. 그 중 50% (5번) 이상 실패하면 서킷 OPEN
+
+        # --- OPEN 상태에서의 동작 ---
+        wait-duration-in-open-state: 5s  # 4. OPEN 상태를 5초간 유지. 이후 HALF_OPEN
+
+        # --- HALF_OPEN 상태에서의 동작 ---
+        permitted-number-of-calls-in-half-open-state: 3 # 5. 3번의 테스트 호출 허용
+  retry:
+    instances:
+      inventory-service:
+        max-attempts: 2 # 1. 최대 2번 시도(첫시도 + 1번 재시도)
+        wait-duration: 100ms  #2. 재시도 사이 100ms 대기
+        retry-exceptions:
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException
+
+      member-service:
+        max-attempts: 3 # 1. 최대 2번 시도(첫시도 + 1번 재시도)
+        wait-duration: 100ms  #2. 재시도 사이 100ms 대기
+        retry-exceptions:
+          - feign.FeignException
+          - java.util.concurrent.TimeoutException
+

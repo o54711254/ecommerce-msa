@@ -1,0 +1,11 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+eureka:
+  client:
+    enabled: false
+
+jwt:
+  secret: test-secret-key-for-integration-testing-only-minimum-32-chars
