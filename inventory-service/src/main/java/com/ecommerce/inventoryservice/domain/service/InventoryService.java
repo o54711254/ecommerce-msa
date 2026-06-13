@@ -7,7 +7,6 @@ import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.entity.InventoryEventType;
-import com.ecommerce.inventoryservice.domain.entity.ProcessedEvent;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
 import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
@@ -27,7 +26,7 @@ import java.util.stream.Collectors;
 public class InventoryService {
 
     private final InventoryRepository inventoryRepository;
-    private final ProcessedEventRepository processedEventRepository;
+    private final ProcessedEventService processedEventService;
 
     @Transactional
     public Long createInventory(CreateInventoryRequest request) {
@@ -59,11 +58,9 @@ public class InventoryService {
 
     @Transactional
     public void decreaseProductInventoryIdempotent(Long orderId, DecreaseProductInventoryRequest request) {
-        if (processedEventRepository.existsByEventTypeAndOrderId(InventoryEventType.DECREASE, orderId)) {
-            log.warn("중복 이벤트 스킵: DECREASE orderId={}", orderId);
+        if (!processedEventService.saveOrSkipOrderEvent(InventoryEventType.DECREASE, orderId)) {
             return;
         }
-        processedEventRepository.save(new ProcessedEvent(InventoryEventType.DECREASE, orderId));
         doDecrease(request);
     }
 
@@ -74,11 +71,9 @@ public class InventoryService {
 
     @Transactional
     public void increaseProductInventoryIdempotent(Long orderId, List<OrderItemInfo> request) {
-        if (processedEventRepository.existsByEventTypeAndOrderId(InventoryEventType.INCREASE, orderId)) {
-            log.warn("중복 이벤트 스킵: INCREASE orderId={}", orderId);
+        if (!processedEventService.saveOrSkipOrderEvent(InventoryEventType.INCREASE, orderId)) {
             return;
         }
-        processedEventRepository.save(new ProcessedEvent(InventoryEventType.INCREASE, orderId));
         doIncrease(request);
     }
 
