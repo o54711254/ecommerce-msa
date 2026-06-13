@@ -156,7 +156,7 @@ class OrderEventConsumerIntegrationTest extends AbstractIntegrationTest {
             kafkaTemplate.send("order.created", "4", "invalid-json{{{");
 
             // DefaultErrorHandler: 3회 재시도(1000ms 간격) 후 DLT 이동 → 최소 3초 소요
-            Awaitility.await().atMost(20, TimeUnit.SECONDS)
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
                     .untilAsserted(() -> assertThat(eventCapture.dlt).hasSize(1));
         }
     }

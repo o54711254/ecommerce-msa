@@ -10,6 +10,7 @@ import com.ecommerce.productservice.domain.entity.Product;
 import com.ecommerce.productservice.domain.entity.ProductStatus;
 import com.ecommerce.productservice.domain.repository.ProductRepository;
 import com.ecommerce.productservice.client.inventory.InventoryClient;
+import com.ecommerce.productservice.client.inventory.InventoryClientHelper;
 import com.ecommerce.productservice.client.member.MemberClient;
 import com.ecommerce.productservice.global.exception.custom.ForbiddenException;
 import com.ecommerce.productservice.global.exception.custom.ProductAccessDeniedException;
@@ -44,6 +45,7 @@ class ProductServiceTest {
 
     @Mock private ProductRepository productRepository;
     @Mock private InventoryClient inventoryClient;
+    @Mock private InventoryClientHelper inventoryClientHelper;
     @Mock private MemberClient memberClient;
     @InjectMocks private ProductService productService;
 
@@ -137,7 +139,7 @@ class ProductServiceTest {
             ReflectionTestUtils.setField(product, "id", productId);
             ReflectionTestUtils.setField(product, "createdAt", LocalDateTime.of(2024, 1, 1, 0, 0));
             given(productRepository.findById(productId)).willReturn(Optional.of(product));
-            given(inventoryClient.getInventory(productId)).willReturn(ResponseEntity.ok(new InventoryResponse(productId, 10)));
+            given(inventoryClientHelper.getInventory(productId)).willReturn(new InventoryResponse(productId, 10));
             given(memberClient.getSeller(sellerId)).willReturn(ResponseEntity.ok(new SellerResponse("판매자", "seller@test.com")));
 
             ProductDetailResponse result = productService.getProductDetail(productId);
