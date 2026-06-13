@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class PaymentEventDltConsumer {
 
     // payment.success, payment.failed 두 토픽의 DLT를 하나의 리스너에서 처리
-    @KafkaListener(topics = {"payment.success.DLT", "payment.failed.DLT"}, groupId = "orderGroup-dlt")
+    @KafkaListener(topics = {"payment.success-dlt", "payment.failed-dlt"}, groupId = "orderGroup-dlt")
     public void handle(String rawJson,
                        @Header(KafkaHeaders.DLT_ORIGINAL_TOPIC) String originalTopic,
                        @Header(KafkaHeaders.DLT_EXCEPTION_MESSAGE) String exceptionMessage) {

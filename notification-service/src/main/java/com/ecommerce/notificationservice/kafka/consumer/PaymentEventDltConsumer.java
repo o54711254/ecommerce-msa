@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class PaymentEventDltConsumer {
 
-    @KafkaListener(topics = {"payment.success.DLT", "payment.failed.DLT"}, groupId = "notificationGroup-dlt")
+    @KafkaListener(topics = {"payment.success-dlt", "payment.failed-dlt"}, groupId = "notificationGroup-dlt")
     public void handle(String rawJson, @Header(KafkaHeaders.DLT_ORIGINAL_TOPIC) String originalTopic, @Header(KafkaHeaders.DLT_EXCEPTION_MESSAGE) String exceptionMessage) {
 
         log.error("DLT 메시지 수신 - originalTopic: {}, cause: {}, payload: {}", originalTopic, exceptionMessage, rawJson);
