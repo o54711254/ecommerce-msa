@@ -57,11 +57,12 @@ public class InventoryService {
     }
 
     @Transactional
-    public void decreaseProductInventoryIdempotent(Long orderId, DecreaseProductInventoryRequest request) {
+    public boolean decreaseProductInventoryIdempotent(Long orderId, DecreaseProductInventoryRequest request) {
         if (!processedEventService.saveOrSkipOrderEvent(InventoryEventType.DECREASE, orderId)) {
-            return;
+            return false;
         }
         doDecrease(request);
+        return true;
     }
 
     @Transactional

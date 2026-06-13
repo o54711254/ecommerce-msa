@@ -38,8 +38,9 @@ public class OrderEventConsumer {
         log.info("[order.created] consumed: orderId={}", event.orderId());
 
         try {
-            inventoryService.decreaseProductInventoryIdempotent(event.orderId(), new DecreaseProductInventoryRequest(event.itemInfoList()));
-            inventoryEventProducer.sendInventoryDecreased(new InventoryDecreasedEvent(event.orderId(), event.memberId(), event.amount()));
+            if (inventoryService.decreaseProductInventoryIdempotent(event.orderId(), new DecreaseProductInventoryRequest(event.itemInfoList()))) {
+                inventoryEventProducer.sendInventoryDecreased(new InventoryDecreasedEvent(event.orderId(), event.memberId(), event.amount()));
+            }
         } catch (DataIntegrityViolationException e) {
             // 동시 중복 이벤트로 UNIQUE 제약 위반 → 이미 처리된 것으로 간주, 정상 ACK
             log.warn("[order.created] 중복 이벤트 감지(UNIQUE 위반), 스킵: orderId={}", event.orderId());
