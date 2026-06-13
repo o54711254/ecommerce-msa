@@ -1,4 +1,4 @@
-package com.ecommerce.inventoryservice.kafka.consumer;
+package com.ecommerce.paymentservice.kafka.consumer;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -10,10 +10,10 @@ import org.springframework.stereotype.Component;
 @Component
 public class OrderEventDltConsumer {
 
-    @KafkaListener(topics = {"order.created.DLT", "order.failed.DLT", "order.cancelled.DLT"}, groupId = "inventoryGroup-dlt")
+    @KafkaListener(topics = "inventory.decreased.DLT", groupId = "paymentGroup-dlt")
     public void handle(String rawJson, @Header(KafkaHeaders.DLT_ORIGINAL_TOPIC) String originalTopic, @Header(KafkaHeaders.DLT_EXCEPTION_MESSAGE) String exceptionMessage) {
 
         log.error("DLT 메시지 수신 - originalTopic: {}, cause: {}, payload: {}", originalTopic, exceptionMessage, rawJson);
-        // 슬랙 알림 등 추가
+
     }
 }
