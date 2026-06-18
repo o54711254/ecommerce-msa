@@ -56,6 +56,12 @@ payment.success
 payment.failed
   └─ order-service: 주문 FAILED → order.failed 발행
        └─ inventory-service: 재고 복구
+
+DELETE /order/{id}
+  └─ order-service: payment cancel (Feign, 동기) → 주문 CANCELED or REFUNDED
+       → order.cancelled 발행
+            ├─ inventory-service: 재고 복구
+            └─ notification-service: 취소 알림
 ```
 
 ---
@@ -89,7 +95,7 @@ CREATE TABLE processed_events (
 );
 ```
 
-중복 체크 → 레코드 저장 → 재고 변경을 **하나의 트랜잭션**으로 처리해 중복 실행 차단. 재고 부족(`InsufficientStockException`)은 재시도해도 의미가 없으므로 Kafka `not-retryable` 예외로 등록해 즉시 DLQ로 이동.
+중복 체크 → 레코드 저장 → 재고 변경을 **하나의 트랜잭션**으로 처리해 중복 실행 차단. 비즈니스 예외(`BusinessException`)는 재시도해도 의미가 없으므로 Kafka `not-retryable` 예외로 등록해 즉시 DLQ로 이동. (재고 부족 등 도메인 규칙 위반은 재시도로 해결되지 않음)
 
 ### 4. Pessimistic Lock — 동시 주문 oversell 방지
 
