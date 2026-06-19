@@ -7,6 +7,7 @@ import com.ecommerce.inventoryservice.domain.entity.Inventory;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
 import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InsufficientStockException;
+import com.ecommerce.inventoryservice.kafka.config.KafkaTopic;
 import com.ecommerce.inventoryservice.kafka.dto.OrderItemInfo;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -104,8 +105,8 @@ class InventoryServiceIntegrationTest extends AbstractIntegrationTest {
                     List.of(new OrderInfoRequest(1L, 3))
             );
 
-            inventoryService.decreaseProductInventoryIdempotent(orderId, request);
-            inventoryService.decreaseProductInventoryIdempotent(orderId, request); // 중복 호출
+            inventoryService.decreaseProductInventoryIdempotent(KafkaTopic.ORDER_CREATED, orderId, request);
+            inventoryService.decreaseProductInventoryIdempotent(KafkaTopic.ORDER_CREATED, orderId, request); // 중복 호출
 
             assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(7);
             assertThat(processedEventRepository.count()).isEqualTo(1);
@@ -122,8 +123,8 @@ class InventoryServiceIntegrationTest extends AbstractIntegrationTest {
             Long orderId = 200L;
             List<OrderItemInfo> items = List.of(new OrderItemInfo(1L, 3));
 
-            inventoryService.increaseProductInventoryIdempotent(orderId, items);
-            inventoryService.increaseProductInventoryIdempotent(orderId, items); // 중복 호출
+            inventoryService.increaseProductInventoryIdempotent(KafkaTopic.ORDER_FAILED, orderId, items);
+            inventoryService.increaseProductInventoryIdempotent(KafkaTopic.ORDER_FAILED, orderId, items); // 중복 호출
 
             assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
             assertThat(processedEventRepository.count()).isEqualTo(1);

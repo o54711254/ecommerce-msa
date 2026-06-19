@@ -3,11 +3,8 @@ package com.ecommerce.inventoryservice.kafka.consumer;
 import com.ecommerce.inventoryservice.domain.dto.req.DecreaseProductInventoryRequest;
 import com.ecommerce.inventoryservice.domain.service.InventoryService;
 import com.ecommerce.inventoryservice.global.exception.BusinessException;
-import com.ecommerce.inventoryservice.kafka.dto.InventoryDecreasedEvent;
-import com.ecommerce.inventoryservice.kafka.dto.InventoryFailedEvent;
-import com.ecommerce.inventoryservice.kafka.dto.OrderCancelEvent;
-import com.ecommerce.inventoryservice.kafka.dto.OrderCreateEvent;
-import com.ecommerce.inventoryservice.kafka.dto.OrderFailedEvent;
+import com.ecommerce.inventoryservice.kafka.config.KafkaTopic;
+import com.ecommerce.inventoryservice.kafka.dto.*;
 import com.ecommerce.inventoryservice.kafka.producer.InventoryEventProducer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +23,7 @@ public class OrderEventConsumer {
     private final InventoryEventProducer inventoryEventProducer;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "order.created", groupId = "inventoryGroup")
+    @KafkaListener(topics = KafkaTopic.TopicName.ORDER_CREATED, groupId = "inventoryGroup")
     public void handleOrderCreated(String rawJson) {
         OrderCreateEvent event;
         try {
@@ -38,7 +35,7 @@ public class OrderEventConsumer {
         log.info("[order.created] consumed: orderId={}", event.orderId());
 
         try {
-            if (inventoryService.decreaseProductInventoryIdempotent(event.orderId(), new DecreaseProductInventoryRequest(event.itemInfoList()))) {
+            if (inventoryService.decreaseProductInventoryIdempotent(KafkaTopic.ORDER_CREATED, event.orderId(), new DecreaseProductInventoryRequest(event.itemInfoList()))) {
                 inventoryEventProducer.sendInventoryDecreased(new InventoryDecreasedEvent(event.orderId(), event.memberId(), event.amount()));
             }
         } catch (DataIntegrityViolationException e) {
@@ -51,7 +48,7 @@ public class OrderEventConsumer {
         }
     }
 
-    @KafkaListener(topics = "order.failed", groupId = "inventoryGroup")
+    @KafkaListener(topics = KafkaTopic.TopicName.ORDER_FAILED, groupId = "inventoryGroup")
     public void handleOrderFailed(String rawJson) {
         OrderFailedEvent event;
         try {
@@ -61,13 +58,13 @@ public class OrderEventConsumer {
         }
         log.info("[order.failed] consumed: orderId={}", event.orderId());
         try {
-            inventoryService.increaseProductInventoryIdempotent(event.orderId(), event.itemInfoList());
+            inventoryService.increaseProductInventoryIdempotent(KafkaTopic.ORDER_FAILED, event.orderId(), event.itemInfoList());
         } catch (DataIntegrityViolationException e) {
             log.warn("[order.failed] 중복 이벤트 감지(UNIQUE 위반), 스킵: orderId={}", event.orderId());
         }
     }
 
-    @KafkaListener(topics = "order.cancelled", groupId = "inventoryGroup")
+    @KafkaListener(topics = KafkaTopic.TopicName.ORDER_CANCELLED, groupId = "inventoryGroup")
     public void handleOrderCancelled(String rawJson) {
         OrderCancelEvent event;
         try {
@@ -77,7 +74,7 @@ public class OrderEventConsumer {
         }
         log.info("[order.cancelled] consumed: orderId={}", event.orderId());
         try {
-            inventoryService.increaseProductInventoryIdempotent(event.orderId(), event.itemInfoList());
+            inventoryService.increaseProductInventoryIdempotent(KafkaTopic.ORDER_CANCELLED, event.orderId(), event.itemInfoList());
         } catch (DataIntegrityViolationException e) {
             log.warn("[order.cancelled] 중복 이벤트 감지(UNIQUE 위반), 스킵: orderId={}", event.orderId());
         }

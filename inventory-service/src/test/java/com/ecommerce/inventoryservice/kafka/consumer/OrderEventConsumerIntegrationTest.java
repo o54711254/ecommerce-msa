@@ -2,9 +2,9 @@ package com.ecommerce.inventoryservice.kafka.consumer;
 
 import com.ecommerce.inventoryservice.AbstractIntegrationTest;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
-import com.ecommerce.inventoryservice.domain.entity.InventoryEventType;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
 import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
+import com.ecommerce.inventoryservice.kafka.config.KafkaTopic;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -65,7 +65,9 @@ class OrderEventConsumerIntegrationTest extends AbstractIntegrationTest {
     static class EventCapture {
         final List<String> decreased = new CopyOnWriteArrayList<>();
         final List<String> failed = new CopyOnWriteArrayList<>();
-        final List<String> dlt = new CopyOnWriteArrayList<>();
+        final List<String> createdDlt = new CopyOnWriteArrayList<>();
+        final List<String> failedDlt = new CopyOnWriteArrayList<>();
+        final List<String> cancelledDlt = new CopyOnWriteArrayList<>();
 
         @KafkaListener(topics = "inventory.decreased", groupId = "test-decreased")
         void onDecreased(String msg) {
@@ -77,18 +79,30 @@ class OrderEventConsumerIntegrationTest extends AbstractIntegrationTest {
             failed.add(msg);
         }
 
-        // DLT 토픽은 DeadLetterPublishingRecoverer가 생성하므로 consumer 구독 시점에 존재하지 않음
-        // earliest로 설정해야 파티션 할당 후 offset 0부터 읽어 메시지를 놓치지 않음
-        @KafkaListener(topics = "order.created-dlt", groupId = "test-dlt",
+        @KafkaListener(topics = "order.created-dlt", groupId = "test-created-dlt",
                 properties = "auto.offset.reset=earliest")
-        void onDlt(String msg) {
-            dlt.add(msg);
+        void onCreatedDlt(String msg) {
+            createdDlt.add(msg);
+        }
+
+        @KafkaListener(topics = "order.failed-dlt", groupId = "test-failed-dlt",
+                properties = "auto.offset.reset=earliest")
+        void onFailedDlt(String msg) {
+            failedDlt.add(msg);
+        }
+
+        @KafkaListener(topics = "order.cancelled-dlt", groupId = "test-cancelled-dlt",
+                properties = "auto.offset.reset=earliest")
+        void onCancelledDlt(String msg) {
+            cancelledDlt.add(msg);
         }
 
         void clear() {
             decreased.clear();
             failed.clear();
-            dlt.clear();
+            createdDlt.clear();
+            failedDlt.clear();
+            cancelledDlt.clear();
         }
     }
 
@@ -142,7 +156,7 @@ class OrderEventConsumerIntegrationTest extends AbstractIntegrationTest {
                     .untilAsserted(() -> {
 
                         assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(7);
-                        assertThat(processedEventRepository.existsByEventTypeAndOrderId(InventoryEventType.DECREASE, 3L)).isTrue();
+                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_CREATED, 3L)).isTrue();
                         long decreasedForThisOrder = eventCapture.decreased.stream()
                                 .filter(m -> m.contains("\"orderId\":3"))
                                 .count();
@@ -155,9 +169,96 @@ class OrderEventConsumerIntegrationTest extends AbstractIntegrationTest {
         void DLT_라우팅_잘못된_JSON() {
             kafkaTemplate.send("order.created", "4", "invalid-json{{{");
 
-            // DefaultErrorHandler: 3회 재시도(1000ms 간격) 후 DLT 이동 → 최소 3초 소요
             Awaitility.await().atMost(30, TimeUnit.SECONDS)
-                    .untilAsserted(() -> assertThat(eventCapture.dlt).hasSize(1));
+                    .untilAsserted(() -> assertThat(eventCapture.createdDlt).hasSize(1));
+        }
+    }
+
+    @Nested
+    @DisplayName("handleOrderFailed - 결제 실패 보상 이벤트 처리")
+    class HandleOrderFailedTest {
+
+        @Test
+        void 성공_재고_복구() {
+            inventoryRepository.save(Inventory.create(1L, 5));
+            String payload = """
+                    {"orderId":10,"itemInfoList":[{"productId":1,"quantity":3}]}""";
+
+            kafkaTemplate.send("order.failed", "10", payload);
+
+            Awaitility.await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
+                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_FAILED, 10L)).isTrue();
+                    });
+        }
+
+        @Test
+        void 멱등성_같은_orderId_두번_발행시_한_번만_복구() {
+            inventoryRepository.save(Inventory.create(1L, 5));
+            String payload = """
+                    {"orderId":11,"itemInfoList":[{"productId":1,"quantity":3}]}""";
+
+            kafkaTemplate.send("order.failed", "11", payload);
+            kafkaTemplate.send("order.failed", "11", payload);
+
+            Awaitility.await().during(2, TimeUnit.SECONDS).atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
+                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_FAILED, 11L)).isTrue();
+                    });
+        }
+
+        @Test
+        void DLT_라우팅_잘못된_JSON() {
+            kafkaTemplate.send("order.failed", "12", "invalid-json{{{");
+
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(eventCapture.failedDlt).hasSize(1));
+        }
+    }
+
+    @Nested
+    @DisplayName("handleOrderCancelled - 주문 취소 이벤트 처리")
+    class HandleOrderCancelledTest {
+
+        @Test
+        void 성공_재고_복구() {
+            inventoryRepository.save(Inventory.create(1L, 5));
+            String payload = """
+                    {"memberId":1,"orderId":20,"itemInfoList":[{"productId":1,"quantity":3}]}""";
+
+            kafkaTemplate.send("order.cancelled", "20", payload);
+
+            Awaitility.await().atMost(10, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
+                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_CANCELLED, 20L)).isTrue();
+                    });
+        }
+
+        @Test
+        void 멱등성_같은_orderId_두번_발행시_한_번만_복구() {
+            inventoryRepository.save(Inventory.create(1L, 5));
+            String payload = """
+                    {"memberId":1,"orderId":21,"itemInfoList":[{"productId":1,"quantity":3}]}""";
+
+            kafkaTemplate.send("order.cancelled", "21", payload);
+            kafkaTemplate.send("order.cancelled", "21", payload);
+
+            Awaitility.await().during(2, TimeUnit.SECONDS).atMost(15, TimeUnit.SECONDS)
+                    .untilAsserted(() -> {
+                        assertThat(inventoryRepository.findByProductId(1L).orElseThrow().getQuantity()).isEqualTo(8);
+                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_CANCELLED, 21L)).isTrue();
+                    });
+        }
+
+        @Test
+        void DLT_라우팅_잘못된_JSON() {
+            kafkaTemplate.send("order.cancelled", "22", "invalid-json{{{");
+
+            Awaitility.await().atMost(30, TimeUnit.SECONDS)
+                    .untilAsserted(() -> assertThat(eventCapture.cancelledDlt).hasSize(1));
         }
     }
 }

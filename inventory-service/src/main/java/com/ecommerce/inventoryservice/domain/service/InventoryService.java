@@ -6,10 +6,9 @@ import com.ecommerce.inventoryservice.domain.dto.req.OrderInfoRequest;
 import com.ecommerce.inventoryservice.domain.dto.req.UpdateInventoryRequest;
 import com.ecommerce.inventoryservice.domain.dto.res.InventoryResponse;
 import com.ecommerce.inventoryservice.domain.entity.Inventory;
-import com.ecommerce.inventoryservice.domain.entity.InventoryEventType;
 import com.ecommerce.inventoryservice.domain.repository.InventoryRepository;
-import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.inventoryservice.global.exception.custom.InventoryNotFoundException;
+import com.ecommerce.inventoryservice.kafka.config.KafkaTopic;
 import com.ecommerce.inventoryservice.kafka.dto.OrderItemInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,8 +56,8 @@ public class InventoryService {
     }
 
     @Transactional
-    public boolean decreaseProductInventoryIdempotent(Long orderId, DecreaseProductInventoryRequest request) {
-        if (!processedEventService.saveOrSkipOrderEvent(InventoryEventType.DECREASE, orderId)) {
+    public boolean decreaseProductInventoryIdempotent(KafkaTopic kafkaTopic, Long orderId, DecreaseProductInventoryRequest request) {
+        if (!processedEventService.saveOrSkipOrderEvent(kafkaTopic, orderId)) {
             return false;
         }
         doDecrease(request);
@@ -71,8 +70,8 @@ public class InventoryService {
     }
 
     @Transactional
-    public void increaseProductInventoryIdempotent(Long orderId, List<OrderItemInfo> request) {
-        if (!processedEventService.saveOrSkipOrderEvent(InventoryEventType.INCREASE, orderId)) {
+    public void increaseProductInventoryIdempotent(KafkaTopic kafkaTopic, Long orderId, List<OrderItemInfo> request) {
+        if (!processedEventService.saveOrSkipOrderEvent(kafkaTopic, orderId)) {
             return;
         }
         doIncrease(request);

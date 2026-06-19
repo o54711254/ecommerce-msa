@@ -16,12 +16,12 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic inventoryDecreasedTopic() {
-        return TopicBuilder.name("inventory.decreased").partitions(3).build();
+        return TopicBuilder.name(KafkaTopic.TopicName.INVENTORY_DECREASED).partitions(3).build();
     }
 
     @Bean
     public NewTopic inventoryFailedTopic() {
-        return TopicBuilder.name("inventory.failed").partitions(3).build();
+        return TopicBuilder.name(KafkaTopic.TopicName.INVENTORY_FAILED).partitions(3).build();
     }
 
     @Bean
