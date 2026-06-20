@@ -1,5 +1,6 @@
 package com.ecommerce.orderservice.kafka.producer;
 
+import com.ecommerce.orderservice.kafka.config.KafkaTopic;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
@@ -18,7 +19,7 @@ public class OrderEventProducer {
 
     public void sendOrderCreated(OrderCreateEvent event) {
         try {
-            kafkaTemplate.send("order.created", String.valueOf(event.orderId()),
+            kafkaTemplate.send(KafkaTopic.TopicName.ORDER_CREATED, String.valueOf(event.orderId()),
                     objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -27,7 +28,7 @@ public class OrderEventProducer {
 
     public void sendOrderFailed(OrderFailedEvent event) {
         try {
-            kafkaTemplate.send("order.failed", String.valueOf(event.orderId()),
+            kafkaTemplate.send(KafkaTopic.TopicName.ORDER_FAILED, String.valueOf(event.orderId()),
                     objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -36,7 +37,7 @@ public class OrderEventProducer {
 
     public void sendOrderCancelled(OrderCancelEvent event) {
         try {
-            kafkaTemplate.send("order.cancelled", String.valueOf(event.orderId()),
+            kafkaTemplate.send(KafkaTopic.TopicName.ORDER_CANCELLED, String.valueOf(event.orderId()),
                     objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

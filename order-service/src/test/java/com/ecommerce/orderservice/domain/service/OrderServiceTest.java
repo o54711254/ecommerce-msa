@@ -15,6 +15,7 @@ import com.ecommerce.orderservice.domain.repository.OrderRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
+import com.ecommerce.orderservice.kafka.config.KafkaTopic;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +51,7 @@ class OrderServiceTest {
     @Mock private ProductClient productClient;
     @Mock private PaymentClient paymentClient;
     @Mock private OrderEventProducer orderEventProducer;
+    @Mock private ProcessedEventService processedEventService;
     @InjectMocks private OrderService orderService;
 
     @Nested
@@ -249,10 +252,21 @@ class OrderServiceTest {
             Long orderId = 10L;
             Order order = Order.create(1L, List.of(OrderItem.create(100L, 1, 5000L)));
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
 
-            orderService.updateOrderStatus(orderId, OrderStatus.PAID);
+            orderService.updateOrderStatus(KafkaTopic.PAYMENT_SUCCESS, orderId, OrderStatus.PAID);
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.PAID);
+        }
+
+        @Test
+        void 멱등성_중복_호출시_스킵() {
+            Long orderId = 10L;
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(false);
+
+            orderService.updateOrderStatus(KafkaTopic.PAYMENT_SUCCESS, orderId, OrderStatus.PAID);
+
+            verify(orderRepository, never()).findById(any());
         }
     }
 
@@ -268,8 +282,9 @@ class OrderServiceTest {
                     OrderItem.create(200L, 1, 3000L)
             ));
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
 
-            orderService.handlePaymentFailed(orderId);
+            orderService.handlePaymentFailed(KafkaTopic.PAYMENT_FAILED, orderId);
 
             assertThat(order.getOrderStatus()).isEqualTo(OrderStatus.FAILED);
 
@@ -277,6 +292,17 @@ class OrderServiceTest {
             verify(orderEventProducer).sendOrderFailed(captor.capture());
             assertThat(captor.getValue().orderId()).isEqualTo(orderId);
             assertThat(captor.getValue().itemInfoList()).hasSize(2);
+        }
+
+        @Test
+        void 멱등성_중복_호출시_스킵() {
+            Long orderId = 10L;
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(false);
+
+            orderService.handlePaymentFailed(KafkaTopic.PAYMENT_FAILED, orderId);
+
+            verify(orderRepository, never()).findById(any());
+            verify(orderEventProducer, never()).sendOrderFailed(any());
         }
     }
 }

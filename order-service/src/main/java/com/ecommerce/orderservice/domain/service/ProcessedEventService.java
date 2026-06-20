@@ -1,8 +1,8 @@
-package com.ecommerce.inventoryservice.domain.service;
+package com.ecommerce.orderservice.domain.service;
 
-import com.ecommerce.inventoryservice.domain.entity.ProcessedEvent;
-import com.ecommerce.inventoryservice.domain.repository.ProcessedEventRepository;
-import com.ecommerce.inventoryservice.kafka.config.KafkaTopic;
+import com.ecommerce.orderservice.domain.entity.ProcessedEvent;
+import com.ecommerce.orderservice.domain.repository.ProcessedEventRepository;
+import com.ecommerce.orderservice.kafka.config.KafkaTopic;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

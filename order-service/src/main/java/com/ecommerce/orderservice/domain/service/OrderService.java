@@ -12,9 +12,11 @@ import com.ecommerce.orderservice.domain.entity.Order;
 import com.ecommerce.orderservice.domain.entity.OrderItem;
 import com.ecommerce.orderservice.domain.entity.OrderStatus;
 import com.ecommerce.orderservice.domain.repository.OrderRepository;
+import com.ecommerce.orderservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.orderservice.global.exception.custom.OrderAccessDeniedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderCancelNotAllowedException;
 import com.ecommerce.orderservice.global.exception.custom.OrderNotFoundException;
+import com.ecommerce.orderservice.kafka.config.KafkaTopic;
 import com.ecommerce.orderservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderCreateEvent;
 import com.ecommerce.orderservice.kafka.dto.OrderFailedEvent;
@@ -35,6 +37,7 @@ public class OrderService {
     private final ProductClient productClient;
     private final PaymentClient paymentClient;
     private final OrderEventProducer orderEventProducer;
+    private final ProcessedEventService processedEventService;
 
     @Transactional(readOnly = true)
     public List<OrderListResponse> getOrderList(Long memberId) {
@@ -103,13 +106,19 @@ public class OrderService {
     }
 
     @Transactional
-    public void updateOrderStatus(Long orderId, OrderStatus orderStatus) {
+    public void updateOrderStatus(KafkaTopic kafkaTopic, Long orderId, OrderStatus orderStatus) {
+        if(!processedEventService.saveOrSkipOrderEvent(kafkaTopic, orderId)) {
+            return;
+        }
         Order order = getOrder(orderId);
         order.updateStatus(orderStatus);
     }
 
     @Transactional
-    public void handlePaymentFailed(Long orderId) {
+    public void handlePaymentFailed(KafkaTopic kafkaTopic, Long orderId) {
+        if(!processedEventService.saveOrSkipOrderEvent(kafkaTopic, orderId)) {
+            return;
+        }
         Order order = getOrder(orderId);
         order.updateStatus(OrderStatus.FAILED);
 
