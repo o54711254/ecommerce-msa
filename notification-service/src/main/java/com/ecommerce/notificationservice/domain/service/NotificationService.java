@@ -7,6 +7,7 @@ import com.ecommerce.notificationservice.domain.entity.NotificationType;
 import com.ecommerce.notificationservice.domain.repository.NotificationRepository;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationAccessDeniedException;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationNotFoundException;
+import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final ProcessedEventService processedEventService;
 
     @Transactional
-    public void createNotification(CreateNotificationRequest request) {
+    public void createNotification(KafkaTopic kafkaTopic, CreateNotificationRequest request) {
+        if (!processedEventService.saveOrSkipOrderEvent(kafkaTopic, request.getOrderId())) {
+            return;
+        }
         String content = String.format(request.getType().getMessage(), request.getOrderId());
         Notification notification = Notification.builder()
                 .type(request.getType())

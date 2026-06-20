@@ -2,12 +2,14 @@ package com.ecommerce.notificationservice.kafka.consumer;
 
 import com.ecommerce.notificationservice.domain.dto.req.CreateNotificationRequest;
 import com.ecommerce.notificationservice.domain.service.NotificationService;
+import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
 import com.ecommerce.notificationservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentSuccessEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -19,25 +21,37 @@ public class PaymentEventConsumer {
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "payment.success", groupId = "notificationGroup")
+    @KafkaListener(topics = KafkaTopic.TopicName.PAYMENT_SUCCESS, groupId = "notificationGroup")
     public void handlePaymentSuccess(String rawJson) {
+        PaymentSuccessEvent event;
         try {
-            PaymentSuccessEvent paymentSuccessEvent = objectMapper.readValue(rawJson, PaymentSuccessEvent.class);
-            log.info("[payment.success] consumed: orderId={}", paymentSuccessEvent.orderId());
-            notificationService.createNotification(new CreateNotificationRequest(paymentSuccessEvent));
+            event = objectMapper.readValue(rawJson, PaymentSuccessEvent.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
+
+        log.info("[payment.success] consumed: orderId={}", event.orderId());
+        try {
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, new CreateNotificationRequest(event));
+        } catch (DataIntegrityViolationException e) {
+            log.warn("[payment.success] 중복 이벤트 감지(UNIQUE 위반), 스킵: orderId={}", event.orderId());
+        }
     }
 
-    @KafkaListener(topics = "payment.failed", groupId = "notificationGroup")
+    @KafkaListener(topics = KafkaTopic.TopicName.PAYMENT_FAILED, groupId = "notificationGroup")
     public void handlePaymentFailed(String rawJson) {
+        PaymentFailedEvent event;
         try {
-            PaymentFailedEvent paymentFailedEvent = objectMapper.readValue(rawJson, PaymentFailedEvent.class);
-            log.info("[payment.failed] consumed: orderId={}", paymentFailedEvent.orderId());
-            notificationService.createNotification(new CreateNotificationRequest(paymentFailedEvent));
+            event = objectMapper.readValue(rawJson, PaymentFailedEvent.class);
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
+        }
+
+        log.info("[payment.failed] consumed: orderId={}", event.orderId());
+        try {
+            notificationService.createNotification(KafkaTopic.PAYMENT_FAILED, new CreateNotificationRequest(event));
+        } catch (DataIntegrityViolationException e) {
+            log.warn("[payment.failed] 중복 이벤트 감지(UNIQUE 위반), 스킵: orderId={}", event.orderId());
         }
     }
 }

@@ -1,12 +1,16 @@
 package com.ecommerce.notificationservice.domain.service;
 
 import com.ecommerce.notificationservice.AbstractIntegrationTest;
+import com.ecommerce.notificationservice.domain.dto.req.CreateNotificationRequest;
 import com.ecommerce.notificationservice.domain.dto.res.NotificationListResponse;
 import com.ecommerce.notificationservice.domain.entity.Notification;
 import com.ecommerce.notificationservice.domain.entity.NotificationType;
 import com.ecommerce.notificationservice.domain.repository.NotificationRepository;
+import com.ecommerce.notificationservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationAccessDeniedException;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationNotFoundException;
+import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
+import com.ecommerce.notificationservice.kafka.dto.PaymentSuccessEvent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -22,9 +26,11 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired private NotificationService notificationService;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private ProcessedEventRepository processedEventRepository;
 
     @BeforeEach
     void setUp() {
+        processedEventRepository.deleteAll();
         notificationRepository.deleteAll();
     }
 
@@ -36,6 +42,34 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
                 .content("테스트 알림")
                 .isRead(false)
                 .build());
+    }
+
+    @Nested
+    @DisplayName("createNotification - 알림 생성")
+    class CreateNotificationTest {
+
+        @Test
+        void 성공_알림_DB_저장() {
+            CreateNotificationRequest request = new CreateNotificationRequest(
+                    new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
+
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
+
+            assertThat(notificationRepository.count()).isEqualTo(1);
+            assertThat(processedEventRepository.count()).isEqualTo(1);
+        }
+
+        @Test
+        void 멱등성_같은_orderId_두번_호출시_한_번만_저장() {
+            CreateNotificationRequest request = new CreateNotificationRequest(
+                    new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
+
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
+
+            assertThat(notificationRepository.count()).isEqualTo(1);
+            assertThat(processedEventRepository.count()).isEqualTo(1);
+        }
     }
 
     @Nested

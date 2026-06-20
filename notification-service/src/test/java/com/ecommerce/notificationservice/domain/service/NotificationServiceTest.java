@@ -7,6 +7,7 @@ import com.ecommerce.notificationservice.domain.entity.NotificationType;
 import com.ecommerce.notificationservice.domain.repository.NotificationRepository;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationAccessDeniedException;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationNotFoundException;
+import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
 import com.ecommerce.notificationservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentSuccessEvent;
@@ -30,12 +31,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceTest {
 
     @Mock private NotificationRepository notificationRepository;
+    @Mock private ProcessedEventService processedEventService;
     @InjectMocks private NotificationService notificationService;
 
     @Nested
@@ -45,9 +48,10 @@ class NotificationServiceTest {
         @Test
         void 성공_결제완료_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
             ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
 
-            notificationService.createNotification(request);
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
 
             verify(notificationRepository).save(captor.capture());
             Notification saved = captor.getValue();
@@ -61,8 +65,9 @@ class NotificationServiceTest {
         @Test
         void 성공_결제실패_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new PaymentFailedEvent(10L, 1L));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
 
-            notificationService.createNotification(request);
+            notificationService.createNotification(KafkaTopic.PAYMENT_FAILED, request);
 
             ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
             verify(notificationRepository).save(captor.capture());
@@ -72,12 +77,23 @@ class NotificationServiceTest {
         @Test
         void 성공_주문취소_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new OrderCancelEvent(1L, 10L, List.of()));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
 
-            notificationService.createNotification(request);
+            notificationService.createNotification(KafkaTopic.ORDER_CANCELLED, request);
 
             ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
             verify(notificationRepository).save(captor.capture());
             assertThat(captor.getValue().getType()).isEqualTo(NotificationType.ORDER_CANCELED);
+        }
+
+        @Test
+        void 멱등성_중복_호출시_스킵() {
+            CreateNotificationRequest request = new CreateNotificationRequest(new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(false);
+
+            notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
+
+            verify(notificationRepository, never()).save(any());
         }
     }
 
