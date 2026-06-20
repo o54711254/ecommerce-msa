@@ -16,16 +16,12 @@ public class KafkaConfig {
 
     @Bean
     public NewTopic paymentSuccessTopic() {
-        return TopicBuilder.name("payment.success")
-                .partitions(3)
-                .build();
+        return TopicBuilder.name(KafkaTopic.TopicName.PAYMENT_SUCCESS).partitions(3).build();
     }
 
     @Bean
     public NewTopic paymentFailedTopic() {
-        return TopicBuilder.name("payment.failed")
-                .partitions(3)
-                .build();
+        return TopicBuilder.name(KafkaTopic.TopicName.PAYMENT_FAILED).partitions(3).build();
     }
 
     @Bean

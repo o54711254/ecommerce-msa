@@ -28,12 +28,6 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getPaymentDetail(memberId, paymentId));
     }
 
-    @PostMapping
-    public ResponseEntity<Long> createPayment(@RequestHeader("X-Member-Id") Long memberId,
-                                           @RequestBody CreatePaymentRequest request) {
-        return ResponseEntity.ok(paymentService.createPayment(memberId, request));
-    }
-
     @PostMapping("/{orderId}/cancel")
     public ResponseEntity<Void> cancelPayment(@PathVariable Long orderId) {
         paymentService.cancelPaymentByOrderId(orderId);

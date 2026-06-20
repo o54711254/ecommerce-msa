@@ -9,6 +9,7 @@ import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentAccessDeniedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
+import com.ecommerce.paymentservice.kafka.config.KafkaTopic;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.paymentservice.kafka.dto.PaymentSuccessEvent;
 import com.ecommerce.paymentservice.kafka.producer.PaymentEventProducer;
@@ -24,6 +25,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final PaymentEventProducer paymentEventProducer;
+    private final ProcessedEventService processedEventService;
 
     @Transactional(readOnly = true)
     public List<PaymentResponse> getPaymentList(Long memberId) {
@@ -42,7 +44,10 @@ public class PaymentService {
     }
 
     @Transactional
-    public Long createPayment(Long memberId, CreatePaymentRequest request) {
+    public Long createPayment(KafkaTopic kafkaTopic, Long memberId, CreatePaymentRequest request) {
+        if (!processedEventService.saveOrSkipOrderEvent(kafkaTopic, request.orderId())) {
+            return null;
+        }
         Payment payment = Payment.create(memberId, request.orderId(), request.amount());
         return paymentRepository.save(payment).getId();
     }

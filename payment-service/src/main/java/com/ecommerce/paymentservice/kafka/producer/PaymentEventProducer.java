@@ -1,5 +1,6 @@
 package com.ecommerce.paymentservice.kafka.producer;
 
+import com.ecommerce.paymentservice.kafka.config.KafkaTopic;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.paymentservice.kafka.dto.PaymentSuccessEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -17,7 +18,7 @@ public class PaymentEventProducer {
 
     public void sendPaymentSuccess(PaymentSuccessEvent event) {
         try {
-            kafkaTemplate.send("payment.success", String.valueOf(event.orderId()),
+            kafkaTemplate.send(KafkaTopic.TopicName.PAYMENT_SUCCESS, String.valueOf(event.orderId()),
                     objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -26,7 +27,7 @@ public class PaymentEventProducer {
 
     public void sendPaymentFailed(PaymentFailedEvent event) {
         try {
-            kafkaTemplate.send("payment.failed", String.valueOf(event.orderId()),
+            kafkaTemplate.send(KafkaTopic.TopicName.PAYMENT_FAILED, String.valueOf(event.orderId()),
                     objectMapper.writeValueAsString(event));
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);

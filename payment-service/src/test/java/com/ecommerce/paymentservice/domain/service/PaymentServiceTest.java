@@ -9,6 +9,7 @@ import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentAccessDeniedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
+import com.ecommerce.paymentservice.kafka.config.KafkaTopic;
 import com.ecommerce.paymentservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.paymentservice.kafka.dto.PaymentSuccessEvent;
 import com.ecommerce.paymentservice.kafka.producer.PaymentEventProducer;
@@ -29,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 
@@ -37,6 +39,7 @@ class PaymentServiceTest {
 
     @Mock private PaymentRepository paymentRepository;
     @Mock private PaymentEventProducer paymentEventProducer;
+    @Mock private ProcessedEventService processedEventService;
     @InjectMocks private PaymentService paymentService;
 
     @Nested
@@ -112,12 +115,25 @@ class PaymentServiceTest {
             CreatePaymentRequest request = new CreatePaymentRequest(10L, 50000L);
             Payment payment = Payment.create(memberId, 10L, 50000L);
             ReflectionTestUtils.setField(payment, "id", 1L);
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
             given(paymentRepository.save(any(Payment.class))).willReturn(payment);
 
-            Long paymentId = paymentService.createPayment(memberId, request);
+            Long paymentId = paymentService.createPayment(KafkaTopic.INVENTORY_DECREASED, memberId, request);
 
             assertThat(paymentId).isEqualTo(1L);
             verify(paymentRepository).save(any(Payment.class));
+        }
+
+        @Test
+        void 멱등성_중복_호출시_스킵() {
+            Long memberId = 1L;
+            CreatePaymentRequest request = new CreatePaymentRequest(10L, 50000L);
+            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(false);
+
+            Long paymentId = paymentService.createPayment(KafkaTopic.INVENTORY_DECREASED, memberId, request);
+
+            assertThat(paymentId).isNull();
+            verify(paymentRepository, never()).save(any(Payment.class));
         }
     }
 

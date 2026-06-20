@@ -1,14 +1,17 @@
 package com.ecommerce.paymentservice.domain.service;
 
 import com.ecommerce.paymentservice.AbstractIntegrationTest;
+import com.ecommerce.paymentservice.domain.dto.req.CreatePaymentRequest;
 import com.ecommerce.paymentservice.domain.dto.req.PaymentWebhookRequest;
 import com.ecommerce.paymentservice.domain.dto.res.PaymentResponse;
 import com.ecommerce.paymentservice.domain.entity.Payment;
 import com.ecommerce.paymentservice.domain.entity.PaymentStatus;
 import com.ecommerce.paymentservice.domain.repository.PaymentRepository;
+import com.ecommerce.paymentservice.domain.repository.ProcessedEventRepository;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentAccessDeniedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentCancelNotAllowedException;
 import com.ecommerce.paymentservice.global.exception.custom.PaymentNotFoundException;
+import com.ecommerce.paymentservice.kafka.config.KafkaTopic;
 import com.ecommerce.paymentservice.kafka.producer.PaymentEventProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,11 +29,13 @@ class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired private PaymentService paymentService;
     @Autowired private PaymentRepository paymentRepository;
+    @Autowired private ProcessedEventRepository processedEventRepository;
 
     @MockitoBean private PaymentEventProducer paymentEventProducer;
 
     @BeforeEach
     void setUp() {
+        processedEventRepository.deleteAll();
         paymentRepository.deleteAll();
     }
 
@@ -86,6 +91,32 @@ class PaymentServiceIntegrationTest extends AbstractIntegrationTest {
 
             assertThatThrownBy(() -> paymentService.getPaymentDetail(2L, saved.getId()))
                     .isInstanceOf(PaymentAccessDeniedException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("createPayment - 결제 생성")
+    class CreatePaymentTest {
+
+        @Test
+        void 성공_결제_DB_저장() {
+            Long paymentId = paymentService.createPayment(KafkaTopic.INVENTORY_DECREASED, 1L,
+                    new CreatePaymentRequest(10L, 50000L));
+
+            assertThat(paymentId).isNotNull();
+            assertThat(paymentRepository.findById(paymentId)).isPresent();
+            assertThat(processedEventRepository.count()).isEqualTo(1);
+        }
+
+        @Test
+        void 멱등성_같은_orderId_두번_호출시_한_번만_저장() {
+            paymentService.createPayment(KafkaTopic.INVENTORY_DECREASED, 1L,
+                    new CreatePaymentRequest(10L, 50000L));
+            paymentService.createPayment(KafkaTopic.INVENTORY_DECREASED, 1L,
+                    new CreatePaymentRequest(10L, 50000L));
+
+            assertThat(paymentRepository.count()).isEqualTo(1);
+            assertThat(processedEventRepository.count()).isEqualTo(1);
         }
     }
 
