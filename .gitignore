@@ -18,3 +18,5 @@ out/
 # Java
 *.class
 *.jar
+/docs/architecture-overview.svg
+/docs/order-saga-flow.svg
