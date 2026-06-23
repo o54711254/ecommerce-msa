@@ -5,6 +5,12 @@ Spring Boot 기반 이커머스 마켓플레이스 MSA 프로젝트.
 
 ---
 
+## 아키텍처
+
+![Architecture](docs/architecture.png)
+
+---
+
 ## 기술 스택
 
 | 분류              | 기술                                     |
