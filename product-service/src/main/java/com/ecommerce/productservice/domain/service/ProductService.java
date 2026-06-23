@@ -53,7 +53,7 @@ public class ProductService {
         Product product = getProduct(id);
 
         InventoryResponse inventory = inventoryClientHelper.getInventory(product.getId());
-        SellerResponse seller = memberClient.getSeller(product.getSellerId()).getBody();
+        SellerResponse seller = memberClient.getSeller(product.getSellerId());
 
         return ProductDetailResponse.builder()
                 .id(product.getId())

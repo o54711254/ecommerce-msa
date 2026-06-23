@@ -15,7 +15,7 @@ public class InventoryClientHelper {
 
     @Retry(name = "inventory-service", fallbackMethod = "getInventoryFallback")
     public InventoryResponse getInventory(Long productId) {
-        return inventoryClient.getInventory(productId).getBody();
+        return inventoryClient.getInventory(productId);
     }
 
     private InventoryResponse getInventoryFallback(Long productId, Exception e) {

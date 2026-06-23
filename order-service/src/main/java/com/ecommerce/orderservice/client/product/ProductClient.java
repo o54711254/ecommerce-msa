@@ -3,7 +3,6 @@ package com.ecommerce.orderservice.client.product;
 import com.ecommerce.orderservice.client.product.dto.ProductNameResponse;
 import com.ecommerce.orderservice.client.product.dto.ProductPriceResponse;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -13,9 +12,8 @@ import java.util.List;
 public interface ProductClient {
 
     @GetMapping("/api/v1/product/price")
-    ResponseEntity<ProductPriceResponse> getPriceMap(@RequestParam List<Long> productIds);
+    ProductPriceResponse getPriceMap(@RequestParam List<Long> productIds);
 
     @GetMapping("/api/v1/product/names")
-    ResponseEntity<ProductNameResponse> getNamesMap(@RequestParam List<Long> productIds);
-
+    ProductNameResponse getNamesMap(@RequestParam List<Long> productIds);
 }

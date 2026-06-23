@@ -53,7 +53,7 @@ public class OrderService {
         List<OrderItem> orderItems = order.getOrderItems();
 
         List<Long> productIds = orderItems.stream().map(OrderItem::getProductId).toList();
-        Map<Long, String> productNames = productClient.getNamesMap(productIds).getBody().nameMap();
+        Map<Long, String> productNames = productClient.getNamesMap(productIds).nameMap();
 
         List<OrderItemResponse> orderItemResponses = orderItems.stream()
                 .map(item -> {
@@ -138,7 +138,7 @@ public class OrderService {
                 .toList();
 
         // 가격 조회
-        Map<Long, Long> priceMap = productClient.getPriceMap(productIds).getBody().priceMap();
+        Map<Long, Long> priceMap = productClient.getPriceMap(productIds).priceMap();
 
 
         List<OrderItem> orderItems = items.stream()

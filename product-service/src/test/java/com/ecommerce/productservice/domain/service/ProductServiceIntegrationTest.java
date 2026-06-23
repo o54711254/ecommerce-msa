@@ -56,7 +56,7 @@ class ProductServiceIntegrationTest extends AbstractIntegrationTest {
 
         @Test
         void 성공() {
-            given(inventoryClient.createInventory(any())).willReturn(ResponseEntity.ok(1L));
+            given(inventoryClient.createInventory(any())).willReturn(1L);
             CreateProductRequest request = new CreateProductRequest("사과", "맛있는 사과", 1000L, 10);
 
             Long productId = productService.createProduct(1L, "SELLER", request);
@@ -80,7 +80,7 @@ class ProductServiceIntegrationTest extends AbstractIntegrationTest {
         void 성공() {
             Product saved = productRepository.save(Product.create(1L, "사과", "맛있는 사과", 1000L));
             given(inventoryClientHelper.getInventory(saved.getId())).willReturn(new InventoryResponse(saved.getId(), 10));
-            given(memberClient.getSeller(1L)).willReturn(ResponseEntity.ok(new SellerResponse("판매자", "seller@test.com")));
+            given(memberClient.getSeller(1L)).willReturn(new SellerResponse("판매자", "seller@test.com"));
 
             ProductDetailResponse result = productService.getProductDetail(saved.getId());
 
@@ -181,7 +181,7 @@ class ProductServiceIntegrationTest extends AbstractIntegrationTest {
         @Test
         void 성공() {
             Product saved = productRepository.save(Product.create(1L, "사과", "맛있는 사과", 1000L));
-            given(inventoryClient.deleteInventory(saved.getId())).willReturn(ResponseEntity.ok().build());
+            given(inventoryClient.deleteInventory(saved.getId())).willReturn(null);
 
             productService.deleteProduct(saved.getId(), 1L);
 

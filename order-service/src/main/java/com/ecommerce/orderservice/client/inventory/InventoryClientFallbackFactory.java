@@ -4,7 +4,6 @@ import com.ecommerce.orderservice.client.inventory.dto.DecreaseProductInventoryR
 import com.ecommerce.orderservice.global.exception.ExternalServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -16,7 +15,7 @@ public class InventoryClientFallbackFactory implements FallbackFactory<Inventory
         log.error("inventory-service 호출 실패 - {}", cause.getMessage());
         return new InventoryClient() {
             @Override
-            public ResponseEntity<Void> decreaseInventory(DecreaseProductInventoryRequest request) {
+            public void decreaseInventory(DecreaseProductInventoryRequest request) {
                 throw new ExternalServiceException("inventory-service", cause);
             }
         };

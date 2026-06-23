@@ -66,7 +66,7 @@ class OrderServiceIntegrationTest extends AbstractIntegrationTest {
                     new CreateOrderItemRequest(200L, 1)
             ));
             given(productClient.getPriceMap(anyList()))
-                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
+                    .willReturn(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L)));
 
             Long orderId = orderService.createOrder(memberId, request);
 
@@ -85,7 +85,7 @@ class OrderServiceIntegrationTest extends AbstractIntegrationTest {
                     new CreateOrderItemRequest(200L, 1)
             ));
             given(productClient.getPriceMap(anyList()))
-                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
+                    .willReturn(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L)));
 
             Long orderId = orderService.createOrder(memberId, request);
 

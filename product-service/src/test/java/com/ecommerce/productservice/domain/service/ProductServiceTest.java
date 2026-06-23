@@ -140,7 +140,7 @@ class ProductServiceTest {
             ReflectionTestUtils.setField(product, "createdAt", LocalDateTime.of(2024, 1, 1, 0, 0));
             given(productRepository.findById(productId)).willReturn(Optional.of(product));
             given(inventoryClientHelper.getInventory(productId)).willReturn(new InventoryResponse(productId, 10));
-            given(memberClient.getSeller(sellerId)).willReturn(ResponseEntity.ok(new SellerResponse("판매자", "seller@test.com")));
+            given(memberClient.getSeller(sellerId)).willReturn(new SellerResponse("판매자", "seller@test.com"));
 
             ProductDetailResponse result = productService.getProductDetail(productId);
 

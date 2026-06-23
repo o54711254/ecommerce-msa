@@ -85,7 +85,7 @@ class OrderServiceTest {
 
             given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
             given(productClient.getNamesMap(anyList()))
-                    .willReturn(ResponseEntity.ok(new ProductNameResponse(Map.of(100L, "상품A"))));
+                    .willReturn(new ProductNameResponse(Map.of(100L, "상품A")));
 
             OrderResponse response = orderService.getOrderDetail(memberId, orderId);
 
@@ -135,7 +135,7 @@ class OrderServiceTest {
             ));
 
             given(productClient.getPriceMap(List.of(100L, 200L)))
-                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L))));
+                    .willReturn(new ProductPriceResponse(Map.of(100L, 5000L, 200L, 3000L)));
             given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
                 Order saved = invocation.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", 1L);
@@ -159,7 +159,7 @@ class OrderServiceTest {
             ));
 
             given(productClient.getPriceMap(anyList()))
-                    .willReturn(ResponseEntity.ok(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L))));
+                    .willReturn(new ProductPriceResponse(Map.of(100L, 1000L, 200L, 2000L)));
             given(orderRepository.save(any(Order.class))).willAnswer(invocation -> {
                 Order saved = invocation.getArgument(0);
                 ReflectionTestUtils.setField(saved, "id", 1L);

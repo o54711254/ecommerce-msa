@@ -4,7 +4,6 @@ import com.ecommerce.orderservice.client.payment.dto.req.CreatePaymentRequest;
 import com.ecommerce.orderservice.global.exception.ExternalServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.openfeign.FallbackFactory;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 @Slf4j
@@ -15,14 +14,13 @@ public class PaymentClientFallbackFactory implements FallbackFactory<PaymentClie
     public PaymentClient create(Throwable cause) {
         log.error("payment-service 호출 실패 - {}", cause.getMessage());
         return new PaymentClient() {
-
             @Override
-            public ResponseEntity<Long> createPayment(Long memberId, CreatePaymentRequest request) {
+            public Long createPayment(Long memberId, CreatePaymentRequest request) {
                 throw new ExternalServiceException("payment-service", cause);
             }
 
             @Override
-            public ResponseEntity<Void> cancelPayment(Long orderId) {
+            public void cancelPayment(Long orderId) {
                 throw new ExternalServiceException("payment-service", cause);
             }
         };
