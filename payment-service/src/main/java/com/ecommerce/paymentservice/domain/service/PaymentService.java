@@ -65,9 +65,15 @@ public class PaymentService {
 
     @Transactional
     public void webhook(PaymentWebhookRequest request) {
-        String status = request.status();
         Payment payment = getPaymentByOrderId(request.orderId());
-        switch (status) {
+        PaymentStatus current = payment.getPaymentStatus();
+
+        // 중복 차단
+        if (request.status().equals(current.name())) return;
+        // 다운그레이드 차단 (SUCCESS → FAILED)
+        if (request.status().equals("FAILED") && current == PaymentStatus.SUCCESS) return;
+
+        switch (request.status()) {
             case "SUCCESS" -> {
                 payment.updatePaymentStatus(PaymentStatus.SUCCESS);
                 paymentEventProducer.sendPaymentSuccess(
