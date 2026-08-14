@@ -101,7 +101,7 @@ CREATE TABLE processed_events (
 );
 ```
 
-중복 체크 → 레코드 저장 → 비즈니스 로직을 **하나의 트랜잭션**으로 처리해 중복 실행 차단. 비즈니스 예외(`BusinessException`)는 재시도해도 의미가 없으므로 Kafka `not-retryable` 예외로 등록해 즉시 DLQ로 이동. (재고 부족 등 도메인 규칙 위반은 재시도로 해결되지 않음)
+중복 체크 → 레코드 저장 → 비즈니스 로직을 **하나의 트랜잭션**으로 처리해 중복 실행 차단. 비즈니스 예외(`BusinessException`)는 재시도해도 의미가 없으므로 Kafka `not-retryable` 예외로 등록해 즉시 DLT로 이동. (재고 부족 등 도메인 규칙 위반은 재시도로 해결되지 않음)
 
 ### 4. Pessimistic Lock — 동시 주문 oversell 방지
 
