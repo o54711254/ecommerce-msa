@@ -1,6 +1,13 @@
 plugins {
 	id 'org.jetbrains.kotlin.jvm' version '2.3.21'
 	id 'org.jetbrains.kotlin.plugin.spring' version '2.3.21'
+
+	/* @Entity, @MappedSuperclass, @Embeddable 대상
+	 1. open class로 컴파일
+	 2. 파리미터 없는 생성자 추가 - noArg
+	*/
+	id 'org.jetbrains.kotlin.plugin.jpa' version '2.3.21'
+
 	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
