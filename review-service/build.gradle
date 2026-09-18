@@ -40,6 +40,8 @@ dependencies {
 
 	// Eureka 클라이언트 (서비스 디스커버리 등록)
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+	// OpenFeign (서비스 간 통신)
+	implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
 
 	// REST API
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'

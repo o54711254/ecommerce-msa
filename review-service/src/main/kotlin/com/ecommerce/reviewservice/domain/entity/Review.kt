@@ -16,7 +16,7 @@ class Review (
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long ? = null,      // 처음에는 null이고 나중에 DB가 값을 채워주기 때문에 var로 선언
+    var id: Long ? = null,      // ?는 null이어도 된다는 표시. 처음에는 null이고 나중에 DB가 값을 채워주기 때문에 var로 선언
 
     // val은 final. 한번 할당하면 값 변경 불가
     @Column(nullable = false)
