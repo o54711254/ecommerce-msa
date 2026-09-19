@@ -8,5 +8,5 @@ data class OrderResponse(
     val totalPrice: Long,
     val orderStatus: OrderStatus,
     val createdAt: LocalDateTime,
-    val items: List<OrderItemResponse>,
+    val itemList: List<OrderItemResponse>,
     )

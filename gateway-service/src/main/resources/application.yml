@@ -35,6 +35,10 @@ spring:
               uri: lb://notification-service
               predicates:
                 - Path=/api/v1/notification/**
+            - id: review-service
+              uri: lb://review-service
+              predicates:
+                - Path=/api/v1/review/**
 
 # Eureka 서버 주소 - 서비스 디스커버리로 lb:// 라우팅 가능
 eureka:

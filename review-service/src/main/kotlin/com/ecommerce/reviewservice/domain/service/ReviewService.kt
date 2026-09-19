@@ -26,7 +26,7 @@ class ReviewService(
         if (orderResponse.orderStatus != OrderStatus.PAID) throw OrderNotPaidException()
 
         // it는 람다의 단일 파라미터에 컴파일러가 자동으로 부여하는 이름, 파라미터가 1개일때만 사용 가능
-        val hasProduct = orderResponse.items.any { it.productId == request.productId }
+        val hasProduct = orderResponse.itemList.any { it.productId == request.productId }
         if (!hasProduct) throw ProductNotInOrderException()
 
         val review = Review(
