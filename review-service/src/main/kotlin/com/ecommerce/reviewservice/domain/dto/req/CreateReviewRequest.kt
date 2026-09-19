@@ -1,5 +1,7 @@
 package com.ecommerce.reviewservice.domain.dto.req
 
+import io.swagger.v3.oas.annotations.media.Schema
+
 /**
  * data class
  * - Data를 담는것이 주 목적인 클래스

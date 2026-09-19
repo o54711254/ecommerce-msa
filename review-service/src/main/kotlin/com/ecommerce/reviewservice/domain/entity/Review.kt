@@ -1,5 +1,6 @@
 package com.ecommerce.reviewservice.domain.entity
 
+import com.ecommerce.reviewservice.global.exception.custom.InvalidRatingException
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
@@ -12,11 +13,11 @@ import jakarta.persistence.UniqueConstraint
 @Table(
     uniqueConstraints = [UniqueConstraint(name = "uk_order_product_id", columnNames = ["order_id", "product_id"])]
 )
-class Review (
+class Review(
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long ? = null,      // ?는 null이어도 된다는 표시. 처음에는 null이고 나중에 DB가 값을 채워주기 때문에 var로 선언
+    var id: Long? = null,      // ?는 null이어도 된다는 표시. 처음에는 null이고 나중에 DB가 값을 채워주기 때문에 var로 선언
 
     // val은 final. 한번 할당하면 값 변경 불가
     @Column(nullable = false)
@@ -32,6 +33,26 @@ class Review (
     @Column(nullable = false)
     var rating: Int,
 
-    @Column
+    @Column(nullable = false)
     var content: String
-) : BaseEntity()
+) : BaseEntity() {
+
+    companion object {
+        fun create(orderId: Long, productId: Long, memberId: Long, rating: Int, content: String): Review {
+            if (rating !in 1..5) throw InvalidRatingException()
+            return Review(
+                orderId = orderId,
+                productId = productId,
+                memberId = memberId,
+                rating = rating,
+                content = content
+            )
+        }
+    }
+
+    fun update(rating: Int, content: String) {
+        if (rating !in 1..5) throw InvalidRatingException()
+        this.rating = rating
+        this.content = content
+    }
+}

@@ -4,11 +4,15 @@ import com.ecommerce.reviewservice.client.order.OrderClient
 import com.ecommerce.reviewservice.client.order.dto.OrderStatus
 import com.ecommerce.reviewservice.client.order.dto.res.OrderResponse
 import com.ecommerce.reviewservice.domain.dto.req.CreateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
 import com.ecommerce.reviewservice.domain.entity.Review
 import com.ecommerce.reviewservice.domain.repository.ReviewRepository
 import com.ecommerce.reviewservice.global.exception.custom.OrderNotPaidException
 import com.ecommerce.reviewservice.global.exception.custom.ProductNotInOrderException
+import com.ecommerce.reviewservice.global.exception.custom.ReviewAccessDeniedException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAlreadyExistsException
+import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,7 +24,11 @@ class ReviewService(
     @Transactional
     fun createReview(memberId: Long, request: CreateReviewRequest): Long {
 
-        if (reviewRepository.existsByOrderIdAndProductId(request.orderId, request.productId)) throw ReviewAlreadyExistsException()
+        if (reviewRepository.existsByOrderIdAndProductId(
+                request.orderId,
+                request.productId
+            )
+        ) throw ReviewAlreadyExistsException()
 
         val orderResponse: OrderResponse = orderClient.getOrder(memberId, request.orderId)
         if (orderResponse.orderStatus != OrderStatus.PAID) throw OrderNotPaidException()
@@ -29,14 +37,31 @@ class ReviewService(
         val hasProduct = orderResponse.itemList.any { it.productId == request.productId }
         if (!hasProduct) throw ProductNotInOrderException()
 
-        val review = Review(
-            orderId = request.orderId,
+        val review = Review.create(
             productId = request.productId,
+            orderId = request.orderId,
             memberId = memberId,
             rating = request.rating,
-            content = request.content,
+            content = request.content
         )
 
+
         return reviewRepository.save(review).id!!   // !!는 null이 아님을 컴파일러에게 알려줌
+    }
+
+    @Transactional
+    fun deleteReview(memberId: Long, reviewId: Long) {
+
+        // ?: 왼쪽이 null이면 오른쪽 반환, 아니면 왼쪽 반환
+        val review = reviewRepository.findByIdOrNull(reviewId) ?: throw ReviewNotFoundException()
+        if (review.memberId != memberId) throw ReviewAccessDeniedException()
+        reviewRepository.delete(review)
+    }
+
+    @Transactional
+    fun updateReview(memberId: Long, reviewId: Long, request: UpdateReviewRequest) {
+        val review = reviewRepository.findByIdOrNull(reviewId) ?: throw ReviewNotFoundException()
+        if (review.memberId != memberId) throw ReviewAccessDeniedException()
+        review.update(request.rating, request.content)
     }
 }
