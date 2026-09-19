@@ -35,6 +35,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             "/webhook"
     );
 
+    // Swagger 관련 경로 (인증 없이 통과)
+    private static final Set<String> SWAGGER_PREFIXES = Set.of(
+            "/v3/api-docs",
+            "/swagger-ui",
+            "/swagger-resources",
+            "/webjars"
+    );
+
     private final JwtUtil jwtUtil;
     private final ObjectMapper objectMapper;
 
@@ -42,7 +50,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String uri = exchange.getRequest().getURI().getPath();
 
-        if (OPEN_ENDPOINTS.stream().anyMatch(uri::endsWith)) {
+        if (OPEN_ENDPOINTS.stream().anyMatch(uri::endsWith)
+                || SWAGGER_PREFIXES.stream().anyMatch(uri::startsWith)
+                || uri.equals("/swagger-ui.html")) {
             return chain.filter(exchange);
         }
 

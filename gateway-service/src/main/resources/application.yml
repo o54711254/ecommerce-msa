@@ -40,6 +40,71 @@ spring:
               predicates:
                 - Path=/api/v1/review/**
 
+            # Swagger api-docs 라우팅
+            # 각 서비스의 /v3/api-docs 를 게이트웨이의 /v3/api-docs/{service-name} 경로로 프록시
+            - id: member-service-docs
+              uri: lb://member-service
+              predicates:
+                - Path=/v3/api-docs/member-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: product-service-docs
+              uri: lb://product-service
+              predicates:
+                - Path=/v3/api-docs/product-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: inventory-service-docs
+              uri: lb://inventory-service
+              predicates:
+                - Path=/v3/api-docs/inventory-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: order-service-docs
+              uri: lb://order-service
+              predicates:
+                - Path=/v3/api-docs/order-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: payment-service-docs
+              uri: lb://payment-service
+              predicates:
+                - Path=/v3/api-docs/payment-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: notification-service-docs
+              uri: lb://notification-service
+              predicates:
+                - Path=/v3/api-docs/notification-service
+              filters:
+                - SetPath=/v3/api-docs
+            - id: review-service-docs
+              uri: lb://review-service
+              predicates:
+                - Path=/v3/api-docs/review-service
+              filters:
+                - SetPath=/v3/api-docs
+
+# Swagger 통합 UI - 각 서비스의 api-docs 를 드롭다운으로 노출
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: member-service
+        url: /v3/api-docs/member-service
+      - name: product-service
+        url: /v3/api-docs/product-service
+      - name: inventory-service
+        url: /v3/api-docs/inventory-service
+      - name: order-service
+        url: /v3/api-docs/order-service
+      - name: payment-service
+        url: /v3/api-docs/payment-service
+      - name: notification-service
+        url: /v3/api-docs/notification-service
+      - name: review-service
+        url: /v3/api-docs/review-service
+
 # Eureka 서버 주소 - 서비스 디스커버리로 lb:// 라우팅 가능
 eureka:
   client:
