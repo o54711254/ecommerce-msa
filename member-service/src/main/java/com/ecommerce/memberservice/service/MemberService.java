@@ -3,6 +3,7 @@ package com.ecommerce.memberservice.service;
 import com.ecommerce.memberservice.dto.req.JoinMemberRequest;
 import com.ecommerce.memberservice.dto.req.LoginRequest;
 import com.ecommerce.memberservice.dto.res.LoginResponse;
+import com.ecommerce.memberservice.dto.res.MemberInfoResponse;
 import com.ecommerce.memberservice.dto.res.MemberProfileResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import com.ecommerce.memberservice.entity.Member;
@@ -16,6 +17,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
@@ -52,5 +55,10 @@ public class MemberService {
     public MemberProfileResponse getMemberProfile(Long memberId) {
         Member member = memberRepository.findById(memberId).orElseThrow(MemberNotFoundException::new);
         return member.toProfileResponse();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MemberInfoResponse> getAllMembersProfile(List<Long> ids) {
+        return memberRepository.getMemberProfiles(ids);
     }
 }

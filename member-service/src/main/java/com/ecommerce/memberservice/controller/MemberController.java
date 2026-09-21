@@ -3,6 +3,7 @@ package com.ecommerce.memberservice.controller;
 import com.ecommerce.memberservice.dto.req.JoinMemberRequest;
 import com.ecommerce.memberservice.dto.req.LoginRequest;
 import com.ecommerce.memberservice.dto.res.LoginResponse;
+import com.ecommerce.memberservice.dto.res.MemberInfoResponse;
 import com.ecommerce.memberservice.dto.res.MemberProfileResponse;
 import com.ecommerce.memberservice.dto.res.MemberResponse;
 import com.ecommerce.memberservice.entity.Role;
@@ -10,6 +11,8 @@ import com.ecommerce.memberservice.service.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -41,5 +44,10 @@ public class MemberController {
     @GetMapping("/{id}")
     public ResponseEntity<MemberProfileResponse> getMemberById(@PathVariable Long id) {
         return ResponseEntity.ok(memberService.getMemberProfile(id));
+    }
+
+    @GetMapping("/infos")
+    public ResponseEntity<List<MemberInfoResponse>> getAllMembers(@RequestParam List<Long> ids){
+        return ResponseEntity.ok(memberService.getAllMembersProfile(ids));
     }
 }

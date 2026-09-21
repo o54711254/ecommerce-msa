@@ -1,10 +1,15 @@
 package com.ecommerce.reviewservice.domain.controller
 
 import com.ecommerce.reviewservice.domain.dto.req.CreateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.req.ProductReviewSearchRequest
 import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
 import com.ecommerce.reviewservice.domain.service.ReviewService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
+import org.springdoc.core.annotations.ParameterObject
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -52,8 +57,12 @@ class ReviewController(
 
     @Operation(summary = "상품별 리뷰 조회")
     @GetMapping("/product/{productId}")
-    fun getProductReview(@PathVariable("productId") productId: Long): ResponseEntity<Boolean> {
-        return ResponseEntity.ok().build()
+    fun getProductReview(
+        @PathVariable("productId") productId: Long,
+        @ParameterObject @ModelAttribute request: ProductReviewSearchRequest,
+        pageable: Pageable
+    ): ResponseEntity<Page<ProductReviewListResponse>> {
+        return ResponseEntity.ok(reviewService.getProductReview(productId, request, pageable))
     }
 
     @Operation(summary = "내 리뷰 목록")

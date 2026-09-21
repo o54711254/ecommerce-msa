@@ -41,6 +41,12 @@ dependencies {
     // 입력값 검증 (@Valid, @NotBlank 등)
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
+    // QueryDSL (OpenFeign 관리 버전 7.1, Jakarta 네이티브)
+    implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
+    annotationProcessor 'io.github.openfeign.querydsl:querydsl-apt:7.1:jpa'
+    annotationProcessor 'jakarta.persistence:jakarta.persistence-api'
+    annotationProcessor 'jakarta.annotation:jakarta.annotation-api'
+
     // JWT 토큰 발급
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'

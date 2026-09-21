@@ -1,10 +1,15 @@
 package com.ecommerce.reviewservice.domain.service
 
+import com.ecommerce.reviewservice.client.member.MemberClient
+import com.ecommerce.reviewservice.client.member.dto.MemberInfoResponse
 import com.ecommerce.reviewservice.client.order.OrderClient
 import com.ecommerce.reviewservice.client.order.dto.OrderStatus
 import com.ecommerce.reviewservice.client.order.dto.res.OrderResponse
 import com.ecommerce.reviewservice.domain.dto.req.CreateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.req.ProductReviewSearchRequest
 import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
+import com.ecommerce.reviewservice.domain.dto.res.ProductReviewQueryResult
 import com.ecommerce.reviewservice.domain.entity.Review
 import com.ecommerce.reviewservice.domain.repository.ReviewRepository
 import com.ecommerce.reviewservice.global.exception.custom.OrderNotPaidException
@@ -12,6 +17,8 @@ import com.ecommerce.reviewservice.global.exception.custom.ProductNotInOrderExce
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAccessDeniedException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAlreadyExistsException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -19,7 +26,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ReviewService(
     private val reviewRepository: ReviewRepository,
-    private val orderClient: OrderClient
+    private val orderClient: OrderClient,
+    private val memberClient: MemberClient
 ) {
     @Transactional
     fun createReview(memberId: Long, request: CreateReviewRequest): Long {
@@ -63,5 +71,36 @@ class ReviewService(
         val review = reviewRepository.findByIdOrNull(reviewId) ?: throw ReviewNotFoundException()
         if (review.memberId != memberId) throw ReviewAccessDeniedException()
         review.update(request.rating, request.content)
+    }
+
+    @Transactional(readOnly = true)
+    fun getProductReview(
+        productId: Long,
+        request: ProductReviewSearchRequest,
+        pageable: Pageable,
+    ): Page<ProductReviewListResponse> {
+        val queryResult: Page<ProductReviewQueryResult> = reviewRepository.getProductReviews(productId, request, pageable)
+
+        val memberIds: List<Long> = queryResult.content.map { it.memberId }.distinct()
+
+        val memberInfos: List<MemberInfoResponse> = if (memberIds.isEmpty()) {
+            emptyList()
+        } else {
+            memberClient.getMemberInfos(memberIds)
+        }
+
+        val memberNamesById: Map<Long, String> = memberInfos.associate { it.memberId to it.name }
+
+        return queryResult.map { review ->
+            ProductReviewListResponse(
+                id = review.id,
+                memberId = review.memberId,
+                memberName = memberNamesById[review.memberId],
+                content = review.content,
+                rating = review.rating,
+                createdAt = review.createdAt,
+                updatedAt = review.updatedAt,
+            )
+        }
     }
 }

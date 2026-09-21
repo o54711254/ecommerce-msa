@@ -8,6 +8,9 @@ plugins {
 	*/
 	id 'org.jetbrains.kotlin.plugin.jpa' version '2.3.21'
 
+	// KSP - Kotlin 네이티브 annotation processing (QueryDSL Q클래스 생성용, kapt 대체)
+	id 'com.google.devtools.ksp' version '2.3.12'
+
 	id 'org.springframework.boot' version '4.0.6'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
@@ -53,6 +56,10 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	// MySQL 드라이버
 	runtimeOnly 'com.mysql:mysql-connector-j'
+
+	// QueryDSL (KSP 방식 - Kotlin 네이티브 Q클래스 생성)
+	implementation 'io.github.openfeign.querydsl:querydsl-jpa:7.1'
+	ksp 'io.github.openfeign.querydsl:querydsl-ksp-codegen:7.1'
 
 	implementation 'org.springframework.boot:spring-boot-starter'
 	implementation 'org.jetbrains.kotlin:kotlin-reflect'
