@@ -5,9 +5,12 @@ import com.ecommerce.reviewservice.client.member.dto.MemberInfoResponse
 import com.ecommerce.reviewservice.client.order.OrderClient
 import com.ecommerce.reviewservice.client.order.dto.OrderStatus
 import com.ecommerce.reviewservice.client.order.dto.res.OrderResponse
+import com.ecommerce.reviewservice.client.product.ProductClient
 import com.ecommerce.reviewservice.domain.dto.req.CreateReviewRequest
 import com.ecommerce.reviewservice.domain.dto.req.ProductReviewSearchRequest
 import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.res.MyReviewListResponse
+import com.ecommerce.reviewservice.domain.dto.res.MyReviewQueryResult
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewQueryResult
 import com.ecommerce.reviewservice.domain.entity.Review
@@ -18,6 +21,7 @@ import com.ecommerce.reviewservice.global.exception.custom.ReviewAccessDeniedExc
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAlreadyExistsException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -27,7 +31,8 @@ import org.springframework.transaction.annotation.Transactional
 class ReviewService(
     private val reviewRepository: ReviewRepository,
     private val orderClient: OrderClient,
-    private val memberClient: MemberClient
+    private val memberClient: MemberClient,
+    private val productClient: ProductClient
 ) {
     @Transactional
     fun createReview(memberId: Long, request: CreateReviewRequest): Long {
@@ -79,7 +84,8 @@ class ReviewService(
         request: ProductReviewSearchRequest,
         pageable: Pageable,
     ): Page<ProductReviewListResponse> {
-        val queryResult: Page<ProductReviewQueryResult> = reviewRepository.getProductReviews(productId, request, pageable)
+        val queryResult: Page<ProductReviewQueryResult> =
+            reviewRepository.getProductReviews(productId, request, pageable)
 
         val memberIds: List<Long> = queryResult.content.map { it.memberId }.distinct()
 
@@ -102,5 +108,39 @@ class ReviewService(
                 updatedAt = review.updatedAt,
             )
         }
+    }
+
+    @Transactional(readOnly = true)
+    fun getMyReview(memberId: Long, pageable: Pageable): Page<MyReviewListResponse> {
+        val queryResult: Page<MyReviewQueryResult> = reviewRepository.getMyReviews(memberId, pageable)
+        val productIds: List<Long> = queryResult.content.map { it.productId }.distinct()
+        val nameMap: Map<Long, String> = productClient.getProductNames(productIds).nameMap
+        //원래 버전
+//        val result: List<MyReviewListResponse> = queryResult.content.map { review ->
+//            MyReviewListResponse(
+//                id = review.id,
+//                productId = review.productId,
+//                productName = nameMap[review.productId],  // map[key] = map.get(key)
+//                rating = review.rating,
+//                content = review.content,
+//                createdAt = review.createdAt,
+//                updatedAt = review.updatedAt,
+//            )
+//        }
+//        return PageImpl(result, pageable, queryResult.totalElements)
+
+        // 편의 메서드
+        return queryResult.map {
+            MyReviewListResponse(
+                id = it.id,
+                productId = it.productId,
+                productName = nameMap[it.productId],
+                rating = it.rating,
+                content = it.content,
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt
+            )
+        }
+
     }
 }

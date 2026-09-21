@@ -3,6 +3,7 @@ package com.ecommerce.reviewservice.domain.controller
 import com.ecommerce.reviewservice.domain.dto.req.CreateReviewRequest
 import com.ecommerce.reviewservice.domain.dto.req.ProductReviewSearchRequest
 import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
+import com.ecommerce.reviewservice.domain.dto.res.MyReviewListResponse
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
 import com.ecommerce.reviewservice.domain.service.ReviewService
 import io.swagger.v3.oas.annotations.Operation
@@ -67,7 +68,10 @@ class ReviewController(
 
     @Operation(summary = "내 리뷰 목록")
     @GetMapping("/my")
-    fun getMyReviews(@RequestHeader("X-Member-Id") memberId: Long): ResponseEntity<Boolean> {
-        return ResponseEntity.ok().build()
+    fun getMyReviews(
+        @RequestHeader("X-Member-Id") memberId: Long,
+        pageable: Pageable
+    ): ResponseEntity<Page<MyReviewListResponse>> {
+        return ResponseEntity.ok(reviewService.getMyReview(memberId, pageable))
     }
 }
