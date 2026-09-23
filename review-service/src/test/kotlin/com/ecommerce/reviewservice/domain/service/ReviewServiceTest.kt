@@ -239,6 +239,58 @@ class ReviewServiceTest {
     }
 
     @Nested
+    @DisplayName("getReviewDetail - 리뷰 상세 조회")
+    inner class GetReviewDetailTest {
+
+        @Test
+        fun 성공() {
+            val now = LocalDateTime.now()
+            val review = Review(id = 1L, orderId = 10L, productId = 100L, memberId = 5L, rating = 4, content = "괜찮음").apply {
+                createdAt = now
+                updatedAt = now
+            }
+            given(reviewRepository.findById(1L)).willReturn(Optional.of(review))
+            given(memberClient.getMemberInfos(listOf(5L)))
+                .willReturn(listOf(MemberInfoResponse(5L, "홍길동")))
+
+            val result = reviewService.getReviewDetail(1L)
+
+            assertThat(result.id).isEqualTo(1L)
+            assertThat(result.productId).isEqualTo(100L)
+            assertThat(result.memberId).isEqualTo(5L)
+            assertThat(result.memberName).isEqualTo("홍길동")
+            assertThat(result.rating).isEqualTo(4)
+            assertThat(result.content).isEqualTo("괜찮음")
+        }
+
+        @Test
+        fun 실패_리뷰_없음() {
+            given(reviewRepository.findById(1L)).willReturn(Optional.empty())
+
+            assertThatThrownBy { reviewService.getReviewDetail(1L) }
+                .isInstanceOf(ReviewNotFoundException::class.java)
+
+            verify(memberClient, never()).getMemberInfos(anyList())
+        }
+
+        @Test
+        fun member_service_실패시_memberName_null() {
+            val now = LocalDateTime.now()
+            val review = Review(id = 1L, orderId = 10L, productId = 100L, memberId = 5L, rating = 4, content = "x").apply {
+                createdAt = now
+                updatedAt = now
+            }
+            given(reviewRepository.findById(1L)).willReturn(Optional.of(review))
+            // fallback이 emptyList() 반환하는 상황 재현
+            given(memberClient.getMemberInfos(listOf(5L))).willReturn(emptyList())
+
+            val result = reviewService.getReviewDetail(1L)
+
+            assertThat(result.memberName).isNull()
+        }
+    }
+
+    @Nested
     @DisplayName("getMyReview - 내 리뷰 목록 조회")
     inner class GetMyReviewTest {
 
