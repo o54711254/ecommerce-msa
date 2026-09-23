@@ -113,6 +113,12 @@ public class ProductService {
         return new ProductNameResponse(productRepository.getNamesMap(productIds));
     }
 
+    @Transactional(readOnly = true)
+    public Long getSellerId(Long id) {
+        Product product = productRepository.findById(id).orElseThrow(ProductNotFoundException::new);
+        return product.getSellerId();
+    }
+
 
     private Product getProduct(Long id) {
         return productRepository.findById(id).orElseThrow(ProductNotFoundException::new);

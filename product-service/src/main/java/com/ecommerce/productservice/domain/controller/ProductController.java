@@ -70,4 +70,9 @@ public class ProductController {
     public ResponseEntity<ProductNameResponse> getNamesMap(@RequestParam List<Long> productIds) {
         return ResponseEntity.ok(productService.getNamesMap(productIds));
     }
+
+    @GetMapping("/{id}/seller")
+    public ResponseEntity<Long> getSellerId(@PathVariable Long id) {
+        return ResponseEntity.ok(productService.getSellerId(id));
+    }
 }
