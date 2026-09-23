@@ -23,15 +23,17 @@ public class NotificationService {
 
     @Transactional
     public void createNotification(KafkaTopic kafkaTopic, CreateNotificationRequest request) {
-        if (!processedEventService.saveOrSkipOrderEvent(kafkaTopic, request.getOrderId())) {
+        if (!processedEventService.saveOrSkipEvent(kafkaTopic, request.getTargetId())) {
             return;
         }
+        // 리뷰 알림은 message에 %d 없음 → orderId(null) 넘겨도 String.format이 초과 인자 무시
         String content = String.format(request.getType().getMessage(), request.getOrderId());
         Notification notification = Notification.builder()
                 .type(request.getType())
                 .memberId(request.getMemberId())
                 .orderId(request.getOrderId())
                 .paymentId(request.getPaymentId())
+                .reviewId(request.getReviewId())
                 .content(content)
                 .isRead(false)
                 .build();

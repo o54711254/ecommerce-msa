@@ -10,7 +10,8 @@ public enum KafkaTopic {
     // Consume
     PAYMENT_SUCCESS(TopicName.PAYMENT_SUCCESS),
     PAYMENT_FAILED(TopicName.PAYMENT_FAILED),
-    ORDER_CANCELLED(TopicName.ORDER_CANCELLED);
+    ORDER_CANCELLED(TopicName.ORDER_CANCELLED),
+    REVIEW_CREATED(TopicName.REVIEW_CREATED);
 
     private final String topicName;
 
@@ -20,7 +21,9 @@ public enum KafkaTopic {
         public static final String PAYMENT_SUCCESS = "payment.success";
         public static final String PAYMENT_FAILED = "payment.failed";
         public static final String ORDER_CANCELLED = "order.cancelled";
+        public static final String REVIEW_CREATED = "review.created";
 
-        private TopicName() {}
+        private TopicName() {
+        }
     }
 }

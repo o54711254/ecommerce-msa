@@ -11,6 +11,7 @@ import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
 import com.ecommerce.notificationservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentSuccessEvent;
+import com.ecommerce.notificationservice.kafka.dto.ReviewCreatedEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,7 +49,7 @@ class NotificationServiceTest {
         @Test
         void 성공_결제완료_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
-            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(true);
             ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
 
             notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
@@ -65,7 +66,7 @@ class NotificationServiceTest {
         @Test
         void 성공_결제실패_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new PaymentFailedEvent(10L, 1L));
-            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(true);
 
             notificationService.createNotification(KafkaTopic.PAYMENT_FAILED, request);
 
@@ -77,7 +78,7 @@ class NotificationServiceTest {
         @Test
         void 성공_주문취소_알림() {
             CreateNotificationRequest request = new CreateNotificationRequest(new OrderCancelEvent(1L, 10L, List.of()));
-            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(true);
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(true);
 
             notificationService.createNotification(KafkaTopic.ORDER_CANCELLED, request);
 
@@ -89,9 +90,37 @@ class NotificationServiceTest {
         @Test
         void 멱등성_중복_호출시_스킵() {
             CreateNotificationRequest request = new CreateNotificationRequest(new PaymentSuccessEvent(10L, 1L, 5L, 50000L));
-            given(processedEventService.saveOrSkipOrderEvent(any(), any())).willReturn(false);
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(false);
 
             notificationService.createNotification(KafkaTopic.PAYMENT_SUCCESS, request);
+
+            verify(notificationRepository, never()).save(any());
+        }
+
+        @Test
+        void 성공_리뷰생성_알림() {
+            Long sellerId = 7L;
+            CreateNotificationRequest request = new CreateNotificationRequest(sellerId, new ReviewCreatedEvent(100L, 200L));
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(true);
+            ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
+
+            notificationService.createNotification(KafkaTopic.REVIEW_CREATED, request);
+
+            verify(notificationRepository).save(captor.capture());
+            Notification saved = captor.getValue();
+            assertThat(saved.getMemberId()).isEqualTo(sellerId);
+            assertThat(saved.getType()).isEqualTo(NotificationType.REVIEW_CREATED);
+            assertThat(saved.getReviewId()).isEqualTo(100L);
+            assertThat(saved.getOrderId()).isNull();
+            assertThat(saved.getPaymentId()).isNull();
+        }
+
+        @Test
+        void 멱등성_리뷰_중복_호출시_스킵() {
+            CreateNotificationRequest request = new CreateNotificationRequest(7L, new ReviewCreatedEvent(100L, 200L));
+            given(processedEventService.saveOrSkipEvent(any(), any())).willReturn(false);
+
+            notificationService.createNotification(KafkaTopic.REVIEW_CREATED, request);
 
             verify(notificationRepository, never()).save(any());
         }

@@ -4,6 +4,7 @@ import com.ecommerce.notificationservice.domain.entity.NotificationType;
 import com.ecommerce.notificationservice.kafka.dto.OrderCancelEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentFailedEvent;
 import com.ecommerce.notificationservice.kafka.dto.PaymentSuccessEvent;
+import com.ecommerce.notificationservice.kafka.dto.ReviewCreatedEvent;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -14,6 +15,7 @@ public class CreateNotificationRequest {
     private NotificationType type;
     private Long orderId;
     private Long paymentId;
+    private Long reviewId;
 
     // 결제 성공엔 반드시 주문과 결제 ID가 있어야함
     public CreateNotificationRequest(PaymentSuccessEvent event) {
@@ -35,5 +37,16 @@ public class CreateNotificationRequest {
         this.memberId = event.memberId();
         this.type = NotificationType.ORDER_CANCELED;
         this.orderId = event.orderId();
+    }
+
+    public CreateNotificationRequest(Long memberId, ReviewCreatedEvent event){
+        this.memberId = memberId;
+        this.type = NotificationType.REVIEW_CREATED;
+        this.reviewId = event.reviewId();
+    }
+
+    // ProcessedEvent 멱등성 체크용. type에 따라 어느 ID가 target인지 결정.
+    public Long getTargetId() {
+        return type == NotificationType.REVIEW_CREATED ? reviewId : orderId;
     }
 }

@@ -16,12 +16,12 @@ public class ProcessedEventService {
     private final ProcessedEventRepository processedEventRepository;
 
     @Transactional
-    public boolean saveOrSkipOrderEvent(KafkaTopic kafkaTopic, Long orderId) {
-        if (processedEventRepository.existsByKafkaTopicAndOrderId(kafkaTopic, orderId)) {
-            log.info("중복 이벤트 스킵. 이벤트 타입 - {}, 주문번호 - {}", kafkaTopic, orderId);
+    public boolean saveOrSkipEvent(KafkaTopic kafkaTopic, Long targetId) {
+        if (processedEventRepository.existsByKafkaTopicAndTargetId(kafkaTopic, targetId)) {
+            log.info("중복 이벤트 스킵. 이벤트 타입 - {}, 대상 ID - {}", kafkaTopic, targetId);
             return false;
         }
-        processedEventRepository.save(new ProcessedEvent(kafkaTopic, orderId));
+        processedEventRepository.save(new ProcessedEvent(kafkaTopic, targetId));
         return true;
     }
 }

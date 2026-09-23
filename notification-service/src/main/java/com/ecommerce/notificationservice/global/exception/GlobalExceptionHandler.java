@@ -16,4 +16,11 @@ public class GlobalExceptionHandler {
         return ErrorResponse.of(e.getErrorCode());
     }
 
+    /* 외부 서버 호출 에러 */
+    @ExceptionHandler(ExternalServiceException.class)
+    protected ResponseEntity<ErrorResponse> handle(ExternalServiceException e) {
+        log.error("{} - {}", e.getClass().getSimpleName(), e.getMessage());
+        return ErrorResponse.of(ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE);
+    }
+
 }

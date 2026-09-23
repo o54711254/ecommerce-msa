@@ -32,6 +32,9 @@ public class Notification extends BaseEntity {
     @Column(nullable = true)
     private Long paymentId;
 
+    @Column(nullable = true)
+    private Long reviewId;
+
     private String content;
 
     @Column(name = "is_read", nullable = false)

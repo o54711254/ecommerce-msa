@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "processed_event_notification",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"kafka_topic", "order_id"}))
+        uniqueConstraints = @UniqueConstraint(columnNames = {"kafka_topic", "target_id"}))
 @NoArgsConstructor
 public class ProcessedEvent {
 
@@ -18,11 +18,13 @@ public class ProcessedEvent {
     @Column(name = "kafka_topic", nullable = false, columnDefinition = "varchar(30)")
     private KafkaTopic kafkaTopic;
 
-    @Column(name = "order_id", nullable = false)
-    private Long orderId;
+    // kafkaTopic이 discriminator라 topic 안에서만 유일하면 됨
+    // (PAYMENT_SUCCESS → orderId, REVIEW_CREATED → reviewId 등 topic에 따라 의미 다름)
+    @Column(name = "target_id", nullable = false)
+    private Long targetId;
 
-    public ProcessedEvent(KafkaTopic kafkaTopic, Long orderId) {
+    public ProcessedEvent(KafkaTopic kafkaTopic, Long targetId) {
         this.kafkaTopic = kafkaTopic;
-        this.orderId = orderId;
+        this.targetId = targetId;
     }
 }

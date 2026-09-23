@@ -5,5 +5,5 @@ import com.ecommerce.notificationservice.kafka.config.KafkaTopic;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, Long> {
-    boolean existsByKafkaTopicAndOrderId(KafkaTopic kafkaTopic, Long orderId);
+    boolean existsByKafkaTopicAndTargetId(KafkaTopic kafkaTopic, Long targetId);
 }

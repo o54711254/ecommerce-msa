@@ -102,7 +102,7 @@ class KafkaConsumerIntegrationTest extends AbstractIntegrationTest {
                         assertThat(notificationRepository.count()).isEqualTo(1);
                         assertThat(notificationRepository.findAll().get(0).getType())
                                 .isEqualTo(NotificationType.PAYMENT_SUCCESS);
-                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.PAYMENT_SUCCESS, 1L)).isTrue();
+                        assertThat(processedEventRepository.existsByKafkaTopicAndTargetId(KafkaTopic.PAYMENT_SUCCESS, 1L)).isTrue();
                     });
         }
 
@@ -143,7 +143,7 @@ class KafkaConsumerIntegrationTest extends AbstractIntegrationTest {
                         assertThat(notificationRepository.count()).isEqualTo(1);
                         assertThat(notificationRepository.findAll().get(0).getType())
                                 .isEqualTo(NotificationType.PAYMENT_FAILED);
-                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.PAYMENT_FAILED, 3L)).isTrue();
+                        assertThat(processedEventRepository.existsByKafkaTopicAndTargetId(KafkaTopic.PAYMENT_FAILED, 3L)).isTrue();
                     });
         }
 
@@ -184,7 +184,7 @@ class KafkaConsumerIntegrationTest extends AbstractIntegrationTest {
                         assertThat(notificationRepository.count()).isEqualTo(1);
                         assertThat(notificationRepository.findAll().get(0).getType())
                                 .isEqualTo(NotificationType.ORDER_CANCELED);
-                        assertThat(processedEventRepository.existsByKafkaTopicAndOrderId(KafkaTopic.ORDER_CANCELLED, 1L)).isTrue();
+                        assertThat(processedEventRepository.existsByKafkaTopicAndTargetId(KafkaTopic.ORDER_CANCELLED, 1L)).isTrue();
                     });
         }
 
