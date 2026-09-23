@@ -21,6 +21,8 @@ import com.ecommerce.reviewservice.global.exception.custom.ProductNotInOrderExce
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAccessDeniedException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAlreadyExistsException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
+import com.ecommerce.reviewservice.kafka.dto.ReviewCreatedEvent
+import com.ecommerce.reviewservice.kafka.producer.ReviewEventProducer
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
@@ -33,7 +35,8 @@ class ReviewService(
     private val reviewRepository: ReviewRepository,
     private val orderClient: OrderClient,
     private val memberClient: MemberClient,
-    private val productClient: ProductClient
+    private val productClient: ProductClient,
+    private val reviewEventProducer: ReviewEventProducer
 ) {
     @Transactional
     fun createReview(memberId: Long, request: CreateReviewRequest): Long {
@@ -59,8 +62,14 @@ class ReviewService(
             content = request.content
         )
 
-
-        return reviewRepository.save(review).id!!   // !!는 null이 아님을 컴파일러에게 알려줌
+        val result: Long = reviewRepository.save(review).id!!    // !!는 null이 아님을 컴파일러에게 알려줌
+        reviewEventProducer.sendReviewCreated(
+            ReviewCreatedEvent(
+                reviewId = result,
+                productId = request.productId,
+            )
+        )
+        return result;
     }
 
     @Transactional

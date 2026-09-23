@@ -21,6 +21,8 @@ import com.ecommerce.reviewservice.global.exception.custom.ProductNotInOrderExce
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAccessDeniedException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewAlreadyExistsException
 import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
+import com.ecommerce.reviewservice.kafka.dto.ReviewCreatedEvent
+import com.ecommerce.reviewservice.kafka.producer.ReviewEventProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -35,6 +37,7 @@ import org.mockito.BDDMockito.given
 import org.mockito.Mock
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -48,12 +51,13 @@ class ReviewServiceTest {
     @Mock private lateinit var orderClient: OrderClient
     @Mock private lateinit var memberClient: MemberClient
     @Mock private lateinit var productClient: ProductClient
+    @Mock private lateinit var reviewEventProducer: ReviewEventProducer
 
     private lateinit var reviewService: ReviewService
 
     @BeforeEach
     fun setUp() {
-        reviewService = ReviewService(reviewRepository, orderClient, memberClient, productClient)
+        reviewService = ReviewService(reviewRepository, orderClient, memberClient, productClient, reviewEventProducer)
     }
 
     @Nested
@@ -81,6 +85,7 @@ class ReviewServiceTest {
             val result = reviewService.createReview(memberId, request)
 
             assertThat(result).isEqualTo(999L)
+            verify(reviewEventProducer).sendReviewCreated(ReviewCreatedEvent(reviewId = 999L, productId = 100L))
         }
 
         @Test
@@ -91,6 +96,7 @@ class ReviewServiceTest {
                 .isInstanceOf(ReviewAlreadyExistsException::class.java)
 
             verify(orderClient, never()).getOrder(anyLong(), anyLong())
+            verifyNoInteractions(reviewEventProducer)
         }
 
         @Test
@@ -107,6 +113,8 @@ class ReviewServiceTest {
 
             assertThatThrownBy { reviewService.createReview(memberId, request) }
                 .isInstanceOf(OrderNotPaidException::class.java)
+
+            verifyNoInteractions(reviewEventProducer)
         }
 
         @Test
@@ -123,6 +131,8 @@ class ReviewServiceTest {
 
             assertThatThrownBy { reviewService.createReview(memberId, request) }
                 .isInstanceOf(ProductNotInOrderException::class.java)
+
+            verifyNoInteractions(reviewEventProducer)
         }
     }
 

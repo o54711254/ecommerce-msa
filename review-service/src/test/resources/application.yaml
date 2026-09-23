@@ -2,6 +2,10 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  kafka:
+    bootstrap-servers: localhost:9092
+    listener:
+      auto-startup: false
 
 eureka:
   client:

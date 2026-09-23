@@ -16,6 +16,8 @@ import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
 import com.ecommerce.reviewservice.domain.entity.Review
 import com.ecommerce.reviewservice.domain.repository.ReviewRepository
 import com.ecommerce.reviewservice.global.exception.custom.ReviewNotFoundException
+import com.ecommerce.reviewservice.kafka.dto.ReviewCreatedEvent
+import com.ecommerce.reviewservice.kafka.producer.ReviewEventProducer
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.anyList
 import org.mockito.BDDMockito.given
+import org.mockito.Mockito.verify
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.test.context.bean.override.mockito.MockitoBean
@@ -37,6 +40,7 @@ class ReviewServiceIntegrationTest : AbstractIntegrationTest() {
     @MockitoBean private lateinit var orderClient: OrderClient
     @MockitoBean private lateinit var memberClient: MemberClient
     @MockitoBean private lateinit var productClient: ProductClient
+    @MockitoBean private lateinit var reviewEventProducer: ReviewEventProducer
 
     @BeforeEach
     fun setUp() {
@@ -69,6 +73,10 @@ class ReviewServiceIntegrationTest : AbstractIntegrationTest() {
             assertThat(saved.productId).isEqualTo(100L)
             assertThat(saved.rating).isEqualTo(5)
             assertThat(saved.content).isEqualTo("좋아요")
+
+            verify(reviewEventProducer).sendReviewCreated(
+                ReviewCreatedEvent(reviewId = reviewId, productId = 100L)
+            )
         }
     }
 
