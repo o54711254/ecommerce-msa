@@ -5,6 +5,7 @@ import com.ecommerce.reviewservice.domain.dto.req.ProductReviewSearchRequest
 import com.ecommerce.reviewservice.domain.dto.req.UpdateReviewRequest
 import com.ecommerce.reviewservice.domain.dto.res.MyReviewListResponse
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
+import com.ecommerce.reviewservice.domain.dto.res.ReviewDetailResponse
 import com.ecommerce.reviewservice.domain.service.ReviewService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -52,8 +53,8 @@ class ReviewController(
 
     @Operation(summary = "리뷰 상세 조회")
     @GetMapping("/{id}")
-    fun getReviewDetail(@PathVariable("id") reviewId: Long): ResponseEntity<Boolean> {
-        return ResponseEntity.ok().build()
+    fun getReviewDetail(@PathVariable("id") reviewId: Long): ResponseEntity<ReviewDetailResponse> {
+        return ResponseEntity.ok(reviewService.getReviewDetail(reviewId))
     }
 
     @Operation(summary = "상품별 리뷰 조회")

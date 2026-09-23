@@ -13,6 +13,7 @@ import com.ecommerce.reviewservice.domain.dto.res.MyReviewListResponse
 import com.ecommerce.reviewservice.domain.dto.res.MyReviewQueryResult
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewListResponse
 import com.ecommerce.reviewservice.domain.dto.res.ProductReviewQueryResult
+import com.ecommerce.reviewservice.domain.dto.res.ReviewDetailResponse
 import com.ecommerce.reviewservice.domain.entity.Review
 import com.ecommerce.reviewservice.domain.repository.ReviewRepository
 import com.ecommerce.reviewservice.global.exception.custom.OrderNotPaidException
@@ -142,5 +143,22 @@ class ReviewService(
             )
         }
 
+    }
+
+    @Transactional(readOnly = true)
+    fun getReviewDetail(reviewId: Long): ReviewDetailResponse {
+        val review = reviewRepository.findByIdOrNull(reviewId) ?: throw ReviewNotFoundException()
+        val memberMap: Map<Long, String> =
+            memberClient.getMemberInfos(listOf(review.memberId)).associate { it.memberId to it.name }
+        return ReviewDetailResponse(
+            id = reviewId,
+            productId = review.productId,
+            memberId = review.memberId,
+            memberName = memberMap[review.memberId],
+            rating = review.rating,
+            content = review.content,
+            createdAt = review.createdAt!!,
+            updatedAt = review.updatedAt!!
+        )
     }
 }
