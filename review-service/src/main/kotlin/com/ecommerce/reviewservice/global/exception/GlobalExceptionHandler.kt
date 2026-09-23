@@ -16,4 +16,10 @@ class GlobalExceptionHandler {
         log.warn("{} - {}", e.javaClass.simpleName, e.message)
         return ErrorResponse.of(e.errorCode)
     }
+
+    @ExceptionHandler(ExternalServiceException::class)
+    fun handle(e: ExternalServiceException): ResponseEntity<ErrorResponse> {
+        log.error("{} - {}", e.javaClass.simpleName, e.message)
+        return ErrorResponse.of(ErrorCode.EXTERNAL_SERVICE_UNAVAILABLE)
+    }
 }
