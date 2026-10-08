@@ -82,6 +82,17 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
         }
 
         @Test
+        void 성공_최신순_정렬() {
+            Notification older = saveNotification(1L, NotificationType.PAYMENT_SUCCESS);
+            Notification newer = saveNotification(1L, NotificationType.PAYMENT_FAILED);
+
+            Page<NotificationListResponse> result = notificationService.getNotificationList(1L, null, PageRequest.of(0, 10));
+
+            assertThat(result.getContent()).extracting(NotificationListResponse::id)
+                    .containsExactly(newer.getId(), older.getId());
+        }
+
+        @Test
         void 성공_타입_필터_조회() {
             saveNotification(1L, NotificationType.PAYMENT_SUCCESS);
             saveNotification(1L, NotificationType.PAYMENT_FAILED);

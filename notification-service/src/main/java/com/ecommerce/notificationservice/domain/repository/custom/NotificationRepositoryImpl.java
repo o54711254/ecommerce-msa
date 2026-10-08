@@ -35,6 +35,8 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
                 .from(notification)
                 .where(notification.memberId.eq(memberId),
                         eqNotificationType(notificationType))
+                // IDENTITY라 id 순서 = 생성 순서. created_at 대신 PK로 정렬
+                .orderBy(notification.id.desc())
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
                 .fetch();
