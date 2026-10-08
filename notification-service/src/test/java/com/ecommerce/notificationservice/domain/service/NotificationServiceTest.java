@@ -4,6 +4,7 @@ import com.ecommerce.notificationservice.domain.dto.req.CreateNotificationReques
 import com.ecommerce.notificationservice.domain.dto.res.NotificationListResponse;
 import com.ecommerce.notificationservice.domain.entity.Notification;
 import com.ecommerce.notificationservice.domain.entity.NotificationType;
+import com.ecommerce.notificationservice.domain.entity.ReferenceType;
 import com.ecommerce.notificationservice.domain.repository.NotificationRepository;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationAccessDeniedException;
 import com.ecommerce.notificationservice.global.exception.custom.NotificationNotFoundException;
@@ -58,8 +59,8 @@ class NotificationServiceTest {
             Notification saved = captor.getValue();
             assertThat(saved.getMemberId()).isEqualTo(1L);
             assertThat(saved.getType()).isEqualTo(NotificationType.PAYMENT_SUCCESS);
-            assertThat(saved.getOrderId()).isEqualTo(10L);
-            assertThat(saved.getPaymentId()).isEqualTo(5L);
+            assertThat(saved.getReferenceType()).isEqualTo(ReferenceType.ORDER);
+            assertThat(saved.getReferenceId()).isEqualTo(10L);
             assertThat(saved.isRead()).isFalse();
         }
 
@@ -110,9 +111,8 @@ class NotificationServiceTest {
             Notification saved = captor.getValue();
             assertThat(saved.getMemberId()).isEqualTo(sellerId);
             assertThat(saved.getType()).isEqualTo(NotificationType.REVIEW_CREATED);
-            assertThat(saved.getReviewId()).isEqualTo(100L);
-            assertThat(saved.getOrderId()).isNull();
-            assertThat(saved.getPaymentId()).isNull();
+            assertThat(saved.getReferenceType()).isEqualTo(ReferenceType.REVIEW);
+            assertThat(saved.getReferenceId()).isEqualTo(100L);
         }
 
         @Test
@@ -149,9 +149,7 @@ class NotificationServiceTest {
 
         @Test
         void 성공() {
-            Notification notification = Notification.builder()
-                    .memberId(1L).type(NotificationType.PAYMENT_SUCCESS)
-                    .orderId(10L).isRead(false).build();
+            Notification notification = Notification.create(1L, NotificationType.PAYMENT_SUCCESS, 10L);
             given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
 
             notificationService.readNotification(1L, 1L);
@@ -169,9 +167,7 @@ class NotificationServiceTest {
 
         @Test
         void 실패_본인_알림_아님() {
-            Notification notification = Notification.builder()
-                    .memberId(1L).type(NotificationType.PAYMENT_SUCCESS)
-                    .orderId(10L).isRead(false).build();
+            Notification notification = Notification.create(1L, NotificationType.PAYMENT_SUCCESS, 10L);
             given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
 
             assertThatThrownBy(() -> notificationService.readNotification(2L, 1L))
@@ -185,9 +181,7 @@ class NotificationServiceTest {
 
         @Test
         void 성공() {
-            Notification notification = Notification.builder()
-                    .memberId(1L).type(NotificationType.PAYMENT_SUCCESS)
-                    .orderId(10L).isRead(false).build();
+            Notification notification = Notification.create(1L, NotificationType.PAYMENT_SUCCESS, 10L);
             ReflectionTestUtils.setField(notification, "id", 1L);
             given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
 
@@ -206,9 +200,7 @@ class NotificationServiceTest {
 
         @Test
         void 실패_본인_알림_아님() {
-            Notification notification = Notification.builder()
-                    .memberId(1L).type(NotificationType.PAYMENT_SUCCESS)
-                    .orderId(10L).isRead(false).build();
+            Notification notification = Notification.create(1L, NotificationType.PAYMENT_SUCCESS, 10L);
             given(notificationRepository.findById(1L)).willReturn(Optional.of(notification));
 
             assertThatThrownBy(() -> notificationService.deleteNotification(2L, 1L))

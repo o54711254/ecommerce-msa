@@ -35,13 +35,7 @@ class NotificationServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     Notification saveNotification(Long memberId, NotificationType type) {
-        return notificationRepository.save(Notification.builder()
-                .memberId(memberId)
-                .type(type)
-                .orderId(10L)
-                .content("테스트 알림")
-                .isRead(false)
-                .build());
+        return notificationRepository.save(Notification.create(memberId, type, 10L));
     }
 
     @Nested

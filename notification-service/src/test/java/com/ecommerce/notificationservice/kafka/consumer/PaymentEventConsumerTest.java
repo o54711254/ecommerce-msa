@@ -44,8 +44,7 @@ class PaymentEventConsumerTest {
             ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
             verify(notificationService).createNotification(eq(KafkaTopic.PAYMENT_SUCCESS), captor.capture());
             assertThat(captor.getValue().getMemberId()).isEqualTo(1L);
-            assertThat(captor.getValue().getOrderId()).isEqualTo(10L);
-            assertThat(captor.getValue().getPaymentId()).isEqualTo(100L);
+            assertThat(captor.getValue().getReferenceId()).isEqualTo(10L);
             assertThat(captor.getValue().getType()).isEqualTo(NotificationType.PAYMENT_SUCCESS);
         }
 
@@ -78,7 +77,7 @@ class PaymentEventConsumerTest {
             ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
             verify(notificationService).createNotification(eq(KafkaTopic.PAYMENT_FAILED), captor.capture());
             assertThat(captor.getValue().getMemberId()).isEqualTo(1L);
-            assertThat(captor.getValue().getOrderId()).isEqualTo(10L);
+            assertThat(captor.getValue().getReferenceId()).isEqualTo(10L);
             assertThat(captor.getValue().getType()).isEqualTo(NotificationType.PAYMENT_FAILED);
         }
 

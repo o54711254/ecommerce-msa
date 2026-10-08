@@ -26,8 +26,8 @@ public class NotificationRepositoryImpl implements NotificationRepositoryCustom 
         List<NotificationListResponse> list = jpaQueryFactory.select(Projections.constructor(NotificationListResponse.class,
                         notification.id.as("id"),
                         notification.type.as("notificationType"),
-                        notification.orderId.as("orderId"),
-                        notification.paymentId.as("paymentId"),
+                        notification.referenceType.as("referenceType"),
+                        notification.referenceId.as("referenceId"),
                         notification.content.as("content"),
                         notification.isRead.as("isRead"),
                         notification.createdAt.as("createdAt")

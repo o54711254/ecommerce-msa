@@ -45,7 +45,7 @@ class OrderEventConsumerTest {
             ArgumentCaptor<CreateNotificationRequest> captor = ArgumentCaptor.forClass(CreateNotificationRequest.class);
             verify(notificationService).createNotification(eq(KafkaTopic.ORDER_CANCELLED), captor.capture());
             assertThat(captor.getValue().getMemberId()).isEqualTo(1L);
-            assertThat(captor.getValue().getOrderId()).isEqualTo(10L);
+            assertThat(captor.getValue().getReferenceId()).isEqualTo(10L);
             assertThat(captor.getValue().getType()).isEqualTo(NotificationType.ORDER_CANCELED);
         }
 
