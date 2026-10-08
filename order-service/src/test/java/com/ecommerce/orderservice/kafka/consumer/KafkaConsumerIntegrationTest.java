@@ -33,7 +33,11 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(properties = "spring.kafka.listener.auto-startup=true")
+// 기본값 latest면 파티션 할당 전에 발행된 메시지를 건너뜀 → 할당 시점과 무관하게 0번부터 읽도록 earliest
+@SpringBootTest(properties = {
+        "spring.kafka.listener.auto-startup=true",
+        "spring.kafka.consumer.auto-offset-reset=earliest"
+})
 @Import(KafkaConsumerIntegrationTest.EventCaptureConfig.class)
 class KafkaConsumerIntegrationTest extends AbstractIntegrationTest {
 
